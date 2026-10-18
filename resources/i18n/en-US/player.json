@@ -1,0 +1,13 @@
+{
+  "pause": "Pause",
+  "audio": "Audio",
+  "subtitles": "Subtitles",
+  "off": "Off",
+  "loading": "Loading...",
+  "live": "● LIVE",
+  "error": "Playback error",
+  "no_tracks": "No tracks available",
+  "hints": " Pause    ±10s    Audio    Subtitles    Back",
+  "hints_paused": " Resume    ±10s    Audio    Subtitles    Back",
+  "hints_live": " Audio    Subtitles    Back"
+}

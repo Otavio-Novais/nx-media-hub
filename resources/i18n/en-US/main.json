@@ -6,5 +6,9 @@
     "live": "Live TV",
     "settings": "Settings"
   },
-  "placeholder": "Under construction"
+  "placeholder": "Under construction",
+  "test_player": "Player test (Phase 1)",
+  "test_bbb": "Big Buck Bunny 1080p (H.264)",
+  "test_apple": "Apple BipBop (multiple audio and subtitle tracks)",
+  "applet_warning": "The app was opened in applet (album) mode and has little memory. To play videos, open the Homebrew Menu by holding R while launching a game."
 }

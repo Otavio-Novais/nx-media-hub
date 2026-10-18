@@ -2,9 +2,7 @@
     <brls:TabFrame title="@i18n/main/title">
 
         <brls:Tab label="@i18n/main/tabs/home">
-            <brls:Box grow="1" justifyContent="center" alignItems="center">
-                <brls:Label text="@i18n/main/placeholder" />
-            </brls:Box>
+            <HomeTab />
         </brls:Tab>
 
         <brls:Tab label="@i18n/main/tabs/catalog">
