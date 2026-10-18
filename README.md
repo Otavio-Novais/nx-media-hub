@@ -20,7 +20,7 @@ Dependências: `pkg-config libwayland-dev wayland-protocols libxkbcommon-dev lib
 cmake -B build-desktop -DPLATFORM_DESKTOP=ON -DCMAKE_BUILD_TYPE=Debug
 cmake --build build-desktop -j$(nproc)
 ./build-desktop/nx-media-hub -d            # -p <url> abre o player direto
-ctest --test-dir build-desktop               # testes do parser M3U
+ctest --test-dir build-desktop               # testes dos parsers (M3U, TMDB)
 ```
 
 ## Enviar ao Switch
@@ -37,3 +37,5 @@ Na primeira execução o app cria `config.json` em `sdmc:/switch/nx-media-hub/` 
 { "tmdbApiKey": "", "addons": [], "m3uUrls": ["https://iptv-org.github.io/iptv/countries/br.m3u"] }
 ```
 `m3uUrls` aceita URLs ou caminhos locais (ex.: `sdmc:/switch/nx-media-hub/lista.m3u`).
+
+Chave do TMDB para desenvolvimento: crie um `.env` (ignorado pelo git) com `tmdbApiKey=<sua chave>`. O build a usa como padrão quando o `config.json` não tem `tmdbApiKey` — o `.nro` gerado contém a chave, então não o distribua.

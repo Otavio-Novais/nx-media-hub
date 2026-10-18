@@ -3,3 +3,4 @@ build*/
 .pkg-cache/
 .idea/
 .vscode/
+.env

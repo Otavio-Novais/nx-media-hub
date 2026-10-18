@@ -1,0 +1,13 @@
+<brls:Box width="auto" height="auto" axis="column">
+
+    <brls:Label id="heading" width="auto" height="auto" fontSize="24" marginTop="24" marginLeft="36" marginBottom="12" />
+
+    <brls:Label id="status" width="auto" height="auto" marginLeft="36" marginTop="20" />
+
+    <!-- centered: focus moves row by row (natural scrolling only moves focus to fully visible rows) -->
+    <brls:ScrollingFrame width="auto" height="auto" grow="1" scrollingBehavior="centered">
+        <brls:Box id="grid" width="auto" height="auto" axis="column"
+            paddingLeft="30" paddingRight="10" paddingTop="10" paddingBottom="30" />
+    </brls:ScrollingFrame>
+
+</brls:Box>

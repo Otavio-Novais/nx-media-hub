@@ -1,0 +1,94 @@
+{
+ "id": 1396,
+ "name": "Breaking Bad",
+ "original_name": "Breaking Bad",
+ "overview": "Ao saber que tem câncer, um professor passa a fabricar metanfetamina pelo futuro da família, mudando o destino de todos.",
+ "poster_path": "/hGwm9Cj3CdbJIqQWNExQqiYmCd4.jpg",
+ "backdrop_path": "/tsRy63Mu5cu8etL1X7ZLyf7UP1M.jpg",
+ "first_air_date": "2008-01-20",
+ "vote_average": 8.956,
+ "genres": [
+  {
+   "id": 18,
+   "name": "Drama"
+  },
+  {
+   "id": 80,
+   "name": "Crime"
+  }
+ ],
+ "number_of_seasons": 5,
+ "seasons": [
+  {
+   "air_date": "2009-02-17",
+   "episode_count": 9,
+   "id": 3577,
+   "name": "Especiais",
+   "overview": "Concentrada nos outros cenários que giram em torno de Walter White ou aqueles ligados a Walter White.",
+   "poster_path": "/4RaIvSQgHHHPfaI1jFqaMR8UJWM.jpg",
+   "season_number": 0,
+   "vote_average": 0.0
+  },
+  {
+   "air_date": "2008-01-20",
+   "episode_count": 7,
+   "id": 3572,
+   "name": "Temporada 1",
+   "overview": "À medida que Walter constrói seu império, sua esposa começa a suspeitar do seu comportamento. A polícia federal tenta descobrir quem é o novo cabeça.",
+   "poster_path": "/sUbZ6TUTslNkM1f1PZclYVa60zv.jpg",
+   "season_number": 1,
+   "vote_average": 8.4
+  },
+  {
+   "air_date": "2009-03-08",
+   "episode_count": 13,
+   "id": 3573,
+   "name": "Temporada 2",
+   "overview": "Walter e Jesse sobem rápido no mundo das drogas, atraindo a atenção de cartéis rivais e ameaçando a vida de Hank, cunhado policial de Walter.",
+   "poster_path": "/wRx8yodtfA3ikOIxoJpa9u1s3JH.jpg",
+   "season_number": 2,
+   "vote_average": 8.5
+  },
+  {
+   "air_date": "2010-03-21",
+   "episode_count": 13,
+   "id": 3575,
+   "name": "Temporada 3",
+   "overview": "Para sustentar sua família, Walter continua a fabricar metanfetamina às escondidas. Jesse, seu ex-aluno, fica viciado em heroína.",
+   "poster_path": "/zUcStgaDD6FtwLIyzjfxzhcV45t.jpg",
+   "season_number": 3,
+   "vote_average": 8.4
+  },
+  {
+   "air_date": "2011-07-17",
+   "episode_count": 13,
+   "id": 3576,
+   "name": "Temporada 4",
+   "overview": "Bryan Cranston está de volta em mais uma temporada como Walter White, que continua a fabricar cristal e tenta passar a perna no traficante Gus Fring.",
+   "poster_path": "/b44ldObzYhfBr2bV0lMnr9oJHr8.jpg",
+   "season_number": 4,
+   "vote_average": 8.6
+  },
+  {
+   "air_date": "2012-07-15",
+   "episode_count": 16,
+   "id": 3578,
+   "name": "Temporada 5",
+   "overview": "Nos episódios finais, Walt já não está mais apenas fingindo ser mau. Ele é agora um poderoso chefe do narcotráfico, pondo tudo e a todos em risco.",
+   "poster_path": "/igAdP4mObNTZRzGrgQfUEKPlXou.jpg",
+   "season_number": 5,
+   "vote_average": 8.9
+  }
+ ],
+ "external_ids": {
+  "imdb_id": "tt0903747",
+  "freebase_mid": "/m/03d34x8",
+  "freebase_id": "/en/breaking_bad",
+  "tvdb_id": 81189,
+  "tvrage_id": 18164,
+  "wikidata_id": "Q1079",
+  "facebook_id": "BreakingBad",
+  "instagram_id": "breakingbad",
+  "twitter_id": "BreakingBad"
+ }
+}

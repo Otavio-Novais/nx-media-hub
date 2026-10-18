@@ -3,8 +3,13 @@
 #include <curl/curl.h>
 
 #include <algorithm>
+#include <mutex>
 
 namespace {
+
+// One request at a time: concurrent TLS handshakes from several threads are the suspected cause of
+// intermittent native crashes on the Switch (curl's mbedtls backend may lack thread support there)
+std::mutex requestMutex;
 
 size_t writeBody(char* data, size_t size, size_t count, void* userdata) {
     static_cast<std::string*>(userdata)->append(data, size * count);
@@ -18,6 +23,7 @@ namespace HttpClient {
 void init() { curl_global_init(CURL_GLOBAL_DEFAULT); }
 
 HttpResponse get(const std::string& url, const std::map<std::string, std::string>& headers, long timeoutSeconds) {
+    std::lock_guard<std::mutex> lock(requestMutex);
     HttpResponse response;
     CURL* curl = curl_easy_init();
     if (!curl) {

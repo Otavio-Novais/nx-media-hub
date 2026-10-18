@@ -1,0 +1,11 @@
+{
+  "trending": "Em alta",
+  "search": "Buscar",
+  "search_header": "Buscar filmes e séries",
+  "results_for": "Resultados para \"{}\"",
+  "loading": "Carregando...",
+  "error": "Não foi possível carregar o catálogo:",
+  "empty": "Nenhum resultado encontrado.",
+  "movie": "Filme",
+  "series": "Série"
+}

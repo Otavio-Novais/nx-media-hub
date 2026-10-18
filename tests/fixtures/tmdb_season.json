@@ -1,0 +1,33 @@
+{
+ "season_number": 1,
+ "name": "Temporada 1",
+ "episodes": [
+  {
+   "episode_number": 1,
+   "season_number": 1,
+   "name": "Piloto",
+   "overview": "Um professor de química do ensino médio decide vender drogas a fim de sustentar sua família.",
+   "still_path": "/ydlY3iPfeOAvu8gVqrxPoMvzNCn.jpg",
+   "runtime": 59,
+   "air_date": "2008-01-20"
+  },
+  {
+   "episode_number": 2,
+   "season_number": 1,
+   "name": "Cat's in the Bag...",
+   "overview": "Sua primeira venda de droga abortada faz Walt e Jesse se disporem de um par de cadáveres, enquanto Skyler suspeita que seu marido está metido em coisa errada.",
+   "still_path": "/AbMoecO0ZZio0LcgeLxlzdyGs6X.jpg",
+   "runtime": 49,
+   "air_date": "2008-01-27"
+  },
+  {
+   "episode_number": 3,
+   "season_number": 1,
+   "name": "...And the Bag's in the River",
+   "overview": "Enquanto Walt limpa a bagunça deixada após sua primeira venda de drogas, o fato de Skyler chegar perto da verdade sobre sua vida dupla o obriga a considerar dizer a ela a verdade sobre sua doença.",
+   "still_path": "/n8Dah3Tc1vlc4i7bQ9zYPWaFO0e.jpg",
+   "runtime": 49,
+   "air_date": "2008-02-10"
+  }
+ ]
+}

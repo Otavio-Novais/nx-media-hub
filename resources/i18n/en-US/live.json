@@ -4,5 +4,6 @@
   "empty": "No channels found in the configured lists.",
   "error": "Could not load the lists:",
   "all": "All",
-  "others": "Others"
+  "others": "Others",
+  "reload": "Reload lists"
 }

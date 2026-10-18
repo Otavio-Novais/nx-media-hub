@@ -1,17 +1,32 @@
 #include <borealis.hpp>
 #include <cstdlib>
 #include <cstring>
+#include <exception>
 
 #include "api/HttpClient.hpp"
 #include "core/Config.hpp"
 #include "player/PlayerActivity.hpp"
+#include "views/CatalogTab.hpp"
 #include "views/HomeTab.hpp"
 #include "views/LiveTvTab.hpp"
 #include "views/MainActivity.hpp"
+#include "views/RemoteImage.hpp"
 
 using namespace brls::literals;
 
 int main(int argc, char* argv[]) {
+    // Diagnostics: tell an unhandled exception apart from a normal quit in the nxlink logs
+    std::set_terminate([] {
+        try {
+            if (auto e = std::current_exception()) std::rethrow_exception(e);
+        } catch (const std::exception& e) {
+            brls::Logger::error("terminate: unhandled exception: {}", e.what());
+        } catch (...) {
+            brls::Logger::error("terminate: unknown exception");
+        }
+        std::abort();
+    });
+
     // -d: debug logs; -p <url>: open the player directly (desktop testing)
     std::string playUrl;
     for (int i = 1; i < argc; i++) {
@@ -31,8 +46,11 @@ int main(int argc, char* argv[]) {
     brls::Application::createWindow("main/title"_i18n);
     brls::Application::getPlatform()->setThemeVariant(brls::ThemeVariant::DARK);
     brls::Application::setGlobalQuit(true);
+    brls::Application::getExitEvent()->subscribe([] { brls::Logger::info("application exit requested"); });
 
+    brls::Application::registerXMLView("RemoteImage", RemoteImage::create);
     brls::Application::registerXMLView("HomeTab", HomeTab::create);
+    brls::Application::registerXMLView("CatalogTab", CatalogTab::create);
     brls::Application::registerXMLView("LiveTvTab", LiveTvTab::create);
 
     brls::Application::pushActivity(new MainActivity());
@@ -41,5 +59,6 @@ int main(int argc, char* argv[]) {
     while (brls::Application::mainLoop())
         ;
 
+    brls::Logger::info("main loop ended: normal quit");
     return EXIT_SUCCESS;
 }

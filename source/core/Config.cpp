@@ -11,6 +11,10 @@ namespace {
 // Public list of free Brazilian channels (https://github.com/iptv-org/iptv)
 const char* DEFAULT_M3U = "https://iptv-org.github.io/iptv/countries/br.m3u";
 
+#ifndef DEFAULT_TMDB_API_KEY
+#define DEFAULT_TMDB_API_KEY ""
+#endif
+
 std::string configPath() { return Config::dataDir() + "/config.json"; }
 
 }  // namespace
@@ -32,6 +36,15 @@ std::string Config::dataDir() {
 }
 
 void Config::load() {
+    loadFile();
+    // Build-time default (from .env): used when the user has not set a key, never written to config.json
+    if (tmdbApiKey.empty()) {
+        tmdbApiKey       = DEFAULT_TMDB_API_KEY;
+        tmdbKeyIsDefault = !tmdbApiKey.empty();
+    }
+}
+
+void Config::loadFile() {
     std::ifstream file(configPath());
     if (!file) {
         brls::Logger::info("config: {} not found, creating defaults", configPath());
@@ -61,7 +74,8 @@ void Config::load() {
 void Config::save() const {
     std::error_code ec;
     std::filesystem::create_directories(dataDir(), ec);
-    nlohmann::json json = {{"tmdbApiKey", tmdbApiKey}, {"addons", addons}, {"m3uUrls", m3uUrls}};
+    nlohmann::json json = {
+        {"tmdbApiKey", tmdbKeyIsDefault ? "" : tmdbApiKey}, {"addons", addons}, {"m3uUrls", m3uUrls}};
     std::ofstream file(configPath());
     if (!file) {
         brls::Logger::error("config: cannot write {}", configPath());

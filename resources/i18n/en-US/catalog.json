@@ -1,0 +1,11 @@
+{
+  "trending": "Trending",
+  "search": "Search",
+  "search_header": "Search movies and series",
+  "results_for": "Results for \"{}\"",
+  "loading": "Loading...",
+  "error": "Could not load the catalog:",
+  "empty": "No results found.",
+  "movie": "Movie",
+  "series": "Series"
+}

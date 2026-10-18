@@ -3,6 +3,7 @@
 #include <borealis.hpp>
 
 #include "models/MediaItem.hpp"
+#include "views/RemoteImage.hpp"
 
 class ChannelCell : public brls::RecyclerCell {
 public:
@@ -11,22 +12,21 @@ public:
 
     void setChannel(const Channel& channel);
 
-    BRLS_BIND(brls::Image, logo, "logo");
+    BRLS_BIND(RemoteImage, logo, "logo");
     BRLS_BIND(brls::Label, name, "name");
-
-private:
-    std::string logoUrl;
 };
 
 // Live channels from the M3U lists in config.json: categories on the left, channels on the right.
 class LiveTvTab : public brls::Box {
 public:
     LiveTvTab();
+    ~LiveTvTab() override;
     static brls::View* create();
+
+    void showChannels(std::vector<Channel> loaded, const std::string& error);
 
 private:
     void loadLists();
-    void showChannels(std::vector<Channel> loaded, const std::string& error);
     void selectCategory(const std::string& category);
 
     BRLS_BIND(brls::Box, categoryList, "categories");

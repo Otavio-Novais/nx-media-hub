@@ -4,6 +4,7 @@
 #include <fstream>
 #include <set>
 #include <sstream>
+#include "core/Background.hpp"
 
 #include "api/HttpClient.hpp"
 #include "api/M3uParser.hpp"
@@ -14,11 +15,16 @@ using namespace brls::literals;
 
 namespace {
 
-const long LOGO_TIMEOUT = 8;  // seconds: dead logo hosts must not stall the task queue
-
 // "All" and "Others" are synthetic categories (keys never produced by a playlist)
 const std::string ALL_KEY    = "\x01all";
 const std::string OTHERS_KEY = "\x01others";
+
+// Session cache: the tab is recreated on every tab switch, the lists only reload on demand (X).
+// A load in progress is shared: its result goes to whichever tab instance is alive when it finishes.
+std::vector<Channel> cachedChannels;
+std::string cachedCategory = ALL_KEY;
+bool listsLoading          = false;
+LiveTvTab* activeTab       = nullptr;
 
 // Reads an M3U source: http(s) URL or local file (ex: sdmc:/switch/nx-media-hub/lista.m3u)
 bool readSource(const std::string& source, std::string& content, std::string& error) {
@@ -70,29 +76,7 @@ ChannelCell* ChannelCell::create() { return new ChannelCell(); }
 
 void ChannelCell::setChannel(const Channel& channel) {
     name->setText(channel.name);
-    logo->clear();
-    logoUrl = channel.logo;
-    if (logoUrl.empty()) return;
-
-    // Cells are recycled: only apply the logo if the cell still shows the same channel
-    std::string url = logoUrl;
-    ASYNC_RETAIN
-    brls::async([ASYNC_TOKEN, url] {
-        HttpResponse response = HttpClient::get(url, {}, LOGO_TIMEOUT);
-        brls::sync([ASYNC_TOKEN, url, response] {
-            ASYNC_RELEASE
-            if (url != this->logoUrl) return;
-            if (!response.ok() || response.body.empty()) {
-                brls::Logger::warning("live: logo {} failed: {}", url,
-                                      response.error.empty() ? "HTTP " + std::to_string(response.status) : response.error);
-                return;
-            }
-            this->logo->setImageFromMem((const unsigned char*)response.body.data(), (int)response.body.size());
-            // The fixed-size view does not relayout on a new texture: recompute the drawn bounds and paint,
-            // otherwise the logo is drawn with the previous logo's ratio (and its freed texture)
-            this->logo->onLayout();
-        });
-    });
+    logo->setImageFromUrl(channel.logo);
 }
 
 LiveTvTab::LiveTvTab() {
@@ -100,20 +84,45 @@ LiveTvTab::LiveTvTab() {
     channelList->estimatedRowHeight = 70;
     channelList->registerCell("Channel", [] { return ChannelCell::create(); });
     channelList->setVisibility(brls::Visibility::GONE);
-    loadLists();
+
+    this->registerAction("live/reload"_i18n, brls::BUTTON_X, [this](brls::View*) {
+        loadLists();
+        return true;
+    });
+
+    activeTab = this;
+    if (!cachedChannels.empty()) showChannels(cachedChannels, "");
+    else loadLists();
+}
+
+LiveTvTab::~LiveTvTab() {
+    if (activeTab == this) activeTab = nullptr;
 }
 
 brls::View* LiveTvTab::create() { return new LiveTvTab(); }
 
 void LiveTvTab::loadLists() {
+    // Back to the loading state; the current channels stay alive until the new ones replace them.
+    // clearViews() deletes the category cells, possibly the focused one: park the focus on the status label
+    status->setFocusable(true);
+    status->setHideHighlight(true);
+    if (!categoryCells.empty()) brls::Application::giveFocus(status);
+    categoryList->clearViews();
+    categoryCells.clear();
+    channelList->setVisibility(brls::Visibility::GONE);
+    status->setText("live/loading"_i18n);
+    status->setVisibility(brls::Visibility::VISIBLE);
+
     std::vector<std::string> sources = Config::instance().m3uUrls;
     if (sources.empty()) {
         status->setText("live/no_lists"_i18n);
         return;
     }
+    if (listsLoading) return;
+    listsLoading = true;
 
-    ASYNC_RETAIN
-    brls::async([ASYNC_TOKEN, sources] {
+    // Own thread: the shared brls::async queue is busy with image downloads
+    runInBackground([sources] {
         std::vector<Channel> loaded;
         std::string errors;
         for (const auto& source : sources) {
@@ -127,9 +136,11 @@ void LiveTvTab::loadLists() {
             brls::Logger::info("live: {} channels from {}", parsed.size(), source);
             std::move(parsed.begin(), parsed.end(), std::back_inserter(loaded));
         }
-        brls::sync([ASYNC_TOKEN, loaded = std::move(loaded), errors]() mutable {
-            ASYNC_RELEASE
-            this->showChannels(std::move(loaded), errors);
+        brls::sync([loaded = std::move(loaded), errors]() mutable {
+            listsLoading   = false;
+            cachedChannels = loaded;
+            cachedCategory = ALL_KEY;
+            if (activeTab) activeTab->showChannels(std::move(loaded), errors);
         });
     });
 }
@@ -165,7 +176,15 @@ void LiveTvTab::showChannels(std::vector<Channel> loaded, const std::string& err
         categoryCells.emplace_back(key, cell);
     }
 
-    selectCategory(ALL_KEY);
+    bool known = std::any_of(categories.begin(), categories.end(), [](auto& c) { return c.first == cachedCategory; });
+    selectCategory(known ? cachedCategory : ALL_KEY);
+
+    // Focus was parked on the status label during a reload: hand it back to the selected category
+    if (brls::Application::getCurrentFocus() == status) {
+        for (auto& [key, cell] : categoryCells)
+            if (key == cachedCategory) brls::Application::giveFocus(cell);
+    }
+    status->setFocusable(false);
 }
 
 void LiveTvTab::selectCategory(const std::string& category) {
@@ -176,6 +195,7 @@ void LiveTvTab::selectCategory(const std::string& category) {
         if (match) visible.push_back(&channel);
     }
     for (auto& [key, cell] : categoryCells) cell->setSelected(key == category);
+    cachedCategory = category;
 
     // RecyclerFrame reads out of bounds when (re)loaded with zero rows: never hand it an empty list
     // (every category comes from at least one channel, so this only guards future changes)

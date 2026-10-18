@@ -1,0 +1,25 @@
+<brls:Box width="auto" height="auto" axis="column">
+    <brls:ScrollingFrame width="auto" height="auto" grow="1">
+        <brls:Box width="auto" height="auto" axis="column" paddingLeft="40" paddingRight="40" paddingTop="24" paddingBottom="30">
+
+            <brls:Box width="auto" height="auto" axis="row">
+                <RemoteImage id="poster" width="200" height="300" scalingType="fit" cornerRadius="6" />
+
+                <brls:Box width="auto" height="auto" grow="1" axis="column" marginLeft="30">
+                    <brls:Label id="title" width="auto" height="auto" fontSize="30" />
+                    <brls:Label id="meta" width="auto" height="auto" fontSize="17" marginTop="8"
+                        textColor="@theme/brls/text_disabled" text="@i18n/catalog/loading" />
+                    <brls:Label id="overview" width="auto" height="auto" fontSize="17" marginTop="16" />
+                    <brls:Button id="play" width="220" height="auto" style="primary" marginTop="24"
+                        text="@i18n/detail/play" />
+                </brls:Box>
+            </brls:Box>
+
+            <brls:Box id="series" width="auto" height="auto" axis="column" marginTop="30" visibility="gone">
+                <brls:SelectorCell id="season" />
+                <brls:Box id="episodes" width="auto" height="auto" axis="column" marginTop="10" />
+            </brls:Box>
+
+        </brls:Box>
+    </brls:ScrollingFrame>
+</brls:Box>

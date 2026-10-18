@@ -64,6 +64,17 @@ if (PLATFORM_SWITCH)
 endif ()
 
 program_target(${PROJECT_NAME} "${MAIN_SRC}")
+
+# Optional .env (git-ignored) with "tmdbApiKey=<key>": default TMDB key when config.json has none
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.env)
+    file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/.env ENV_TMDB_KEY REGEX "^tmdbApiKey=")
+    string(REGEX REPLACE "^tmdbApiKey=[ \t]*([^ \t\r]*).*" "\\1" ENV_TMDB_KEY "${ENV_TMDB_KEY}")
+    if (ENV_TMDB_KEY)
+        message(STATUS "Using the TMDB API key from .env as default")
+        set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/source/core/Config.cpp PROPERTIES
+            COMPILE_DEFINITIONS "DEFAULT_TMDB_API_KEY=\"${ENV_TMDB_KEY}\"")
+    endif ()
+endif ()
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
 
 # release files
@@ -97,4 +108,11 @@ if (PLATFORM_DESKTOP)
     target_include_directories(m3u_parser_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_compile_definitions(m3u_parser_test PRIVATE FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
     add_test(NAME m3u_parser COMMAND m3u_parser_test)
+endif ()
+if (PLATFORM_DESKTOP)
+    add_executable(tmdb_parser_test tests/TmdbParserTest.cpp source/api/TmdbParser.cpp)
+    set_target_properties(tmdb_parser_test PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+    target_include_directories(tmdb_parser_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${BOREALIS_LIBRARY}/include)
+    target_compile_definitions(tmdb_parser_test PRIVATE FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
+    add_test(NAME tmdb_parser COMMAND tmdb_parser_test)
 endif ()

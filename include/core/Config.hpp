@@ -21,4 +21,7 @@ public:
 
 private:
     Config() = default;
+    void loadFile();
+
+    bool tmdbKeyIsDefault = false;  // key came from the build (.env), not from config.json
 };

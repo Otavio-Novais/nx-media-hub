@@ -1,0 +1,105 @@
+{
+ "page": 1,
+ "results": [
+  {
+   "adult": false,
+   "backdrop_path": "/tlm8UkiQsitc8rSuIAscQDCnP8d.jpg",
+   "id": 603,
+   "title": "Matrix",
+   "original_title": "The Matrix",
+   "overview": "O jovem programador Thomas Anderson é atormentado por estranhos pesadelos em que está sempre conectado por cabos a um imenso sistema de computadores do futuro. À medida que o sonho se repete, ele começa a desconfiar da realidade. Thomas conhece os misteriosos Morpheus e Trinity e descobre que é vítima de um sistema inteligente e artificial chamado Matrix, que manipula a mente das pessoas e cria a ilusão de um mundo real enquanto usa os cérebros e corpos dos indivíduos para produzir energia.",
+   "poster_path": "/lDqMDI3xpbB9UQRyeXfei0MXhqb.jpg",
+   "media_type": "movie",
+   "original_language": "en",
+   "genre_ids": [
+    28,
+    878
+   ],
+   "popularity": 48.1294,
+   "release_date": "1999-03-31",
+   "softcore": false,
+   "video": false,
+   "vote_average": 8.26,
+   "vote_count": 28986
+  },
+  {
+   "adult": false,
+   "backdrop_path": "/ihOJcrorpDQtHTzIOrobbOhpJsj.jpg",
+   "id": 604,
+   "title": "Matrix Reloaded",
+   "original_title": "The Matrix Reloaded",
+   "overview": "Após derrotar as máquinas em seu combate inicial, Neo ainda vive na Nabucodonosor ao lado de Morpheus, Trinity e Link, o novo tripulante da nave. As máquinas estão realizando uma grande ofensiva contra Zion, onde 250 mil delas escavam rumo à cidade e podem alcançá-la em poucos dias. A Nabucodonosor é convocada para retornar a Zion e participar da reunião que definirá o contra-ataque para salvar a humanidade da extinção. Entretanto, um recado enviado pelo Oráculo faz com que Neo retorne à Matrix.",
+   "poster_path": "/ayZkaN2f3ASjWW8ooCfuJT3T8Va.jpg",
+   "media_type": "movie",
+   "original_language": "en",
+   "genre_ids": [
+    28,
+    53,
+    878
+   ],
+   "popularity": 37.4187,
+   "release_date": "2003-05-15",
+   "softcore": false,
+   "video": false,
+   "vote_average": 7.086,
+   "vote_count": 12428
+  },
+  {
+   "adult": false,
+   "backdrop_path": "/533xAMhhVyjTy8hwMUFEt5TuDfR.jpg",
+   "id": 605,
+   "title": "Matrix Revolutions",
+   "original_title": "The Matrix Revolutions",
+   "overview": "Após enfrentar os sentinelas no mundo real, Neo, a maior esperança da humanidade, está preso entre a Matrix e a realidade. A maioria da população do planeta permanece em um estado de suspensão da realidade virtual. Os poucos humanos que estão cientes das duras realidades tentam desesperadamente afastar as máquinas a tempo de Neo escapar e salvar o dia. Mas as coisas pioram quando o poderoso programa de computador, Agente Smith, aparece na forma humana.",
+   "poster_path": "/92oJ810bYqijBQ8tqYL74mSpPtV.jpg",
+   "media_type": "movie",
+   "original_language": "en",
+   "genre_ids": [
+    28,
+    53,
+    878
+   ],
+   "popularity": 29.1716,
+   "release_date": "2003-11-05",
+   "softcore": false,
+   "video": false,
+   "vote_average": 6.76,
+   "vote_count": 11230
+  },
+  {
+   "adult": false,
+   "id": 2766182,
+   "name": "Carlos Matrix",
+   "original_name": "Carlos Matrix",
+   "media_type": "person",
+   "popularity": 0.5432,
+   "gender": 0,
+   "known_for_department": "Crew",
+   "profile_path": null,
+   "known_for": [
+    {
+     "adult": false,
+     "backdrop_path": null,
+     "id": 704401,
+     "title": "Hoje eu Não Fico no Vestiário",
+     "original_title": "Hoje eu Não Fico no Vestiário",
+     "overview": "",
+     "poster_path": "/7GSZ3PLla7JB90kHnCYcyx88hl8.jpg",
+     "media_type": "movie",
+     "original_language": "pt",
+     "genre_ids": [
+      99
+     ],
+     "popularity": 0.9283,
+     "release_date": "2019-07-26",
+     "softcore": false,
+     "video": false,
+     "vote_average": 9.0,
+     "vote_count": 2
+    }
+   ]
+  }
+ ],
+ "total_pages": 7,
+ "total_results": 127
+}
