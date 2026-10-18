@@ -12,9 +12,7 @@
         </brls:Tab>
 
         <brls:Tab label="@i18n/main/tabs/live">
-            <brls:Box grow="1" justifyContent="center" alignItems="center">
-                <brls:Label text="@i18n/main/placeholder" />
-            </brls:Box>
+            <LiveTvTab />
         </brls:Tab>
 
         <brls:Separator />

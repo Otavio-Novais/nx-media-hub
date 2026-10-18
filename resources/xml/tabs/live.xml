@@ -1,0 +1,14 @@
+<brls:Box width="auto" height="auto" axis="row">
+
+    <brls:ScrollingFrame width="300" height="auto">
+        <brls:Box id="categories" width="auto" height="auto" axis="column"
+            paddingTop="20" paddingBottom="20" paddingLeft="20" paddingRight="10" />
+    </brls:ScrollingFrame>
+
+    <brls:Box width="auto" height="auto" grow="1" axis="column">
+        <brls:Label id="status" width="auto" height="auto" margin="40" text="@i18n/live/loading" />
+        <brls:RecyclerFrame id="channels" width="auto" height="auto" grow="1"
+            paddingTop="20" paddingRight="30" paddingBottom="20" paddingLeft="10" />
+    </brls:Box>
+
+</brls:Box>

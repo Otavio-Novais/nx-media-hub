@@ -1,0 +1,10 @@
+#EXTM3U
+#EXTINF:-1 group-title="Esportes",Canal A
+#EXTVLCOPT:http-user-agent=Mozilla/5.0 Test
+#EXTVLCOPT:http-referrer=https://ref.example.com/
+https://cdn.example.com/a.m3u8
+#EXTINF:-1 group-title="Esportes",Canal B
+https://cdn.example.com/b.m3u8
+#EXTINF:-1,Canal C
+#EXTGRP:Filmes
+https://cdn.example.com/c.m3u8|User-Agent=KodiUA&Referer=https://kodi.example.com/&Origin=https://kodi.example.com

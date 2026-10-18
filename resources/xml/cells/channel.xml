@@ -1,0 +1,7 @@
+<brls:Box width="auto" height="auto" focusable="true" alignItems="center" paddingTop="8" paddingBottom="8">
+
+    <brls:Image id="logo" width="96" height="54" marginLeft="16" marginRight="20" scalingType="fit" />
+
+    <brls:Label id="name" width="auto" height="auto" grow="1" fontSize="20" singleLine="true" marginRight="16" />
+
+</brls:Box>

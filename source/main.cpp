@@ -2,8 +2,11 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "api/HttpClient.hpp"
+#include "core/Config.hpp"
 #include "player/PlayerActivity.hpp"
 #include "views/HomeTab.hpp"
+#include "views/LiveTvTab.hpp"
 #include "views/MainActivity.hpp"
 
 using namespace brls::literals;
@@ -17,6 +20,8 @@ int main(int argc, char* argv[]) {
     }
 
     brls::Platform::APP_LOCALE_DEFAULT = brls::LOCALE_PT_BR;
+    HttpClient::init();
+    Config::instance().load();
 
     if (!brls::Application::init()) {
         brls::Logger::error("Unable to init Borealis application");
@@ -28,6 +33,7 @@ int main(int argc, char* argv[]) {
     brls::Application::setGlobalQuit(true);
 
     brls::Application::registerXMLView("HomeTab", HomeTab::create);
+    brls::Application::registerXMLView("LiveTvTab", LiveTvTab::create);
 
     brls::Application::pushActivity(new MainActivity());
     if (!playUrl.empty()) brls::Application::pushActivity(new PlayerActivity({.title = playUrl, .url = playUrl}));

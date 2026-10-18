@@ -19,7 +19,8 @@ Dependências: `pkg-config libwayland-dev wayland-protocols libxkbcommon-dev lib
 ```bash
 cmake -B build-desktop -DPLATFORM_DESKTOP=ON -DCMAKE_BUILD_TYPE=Debug
 cmake --build build-desktop -j$(nproc)
-./build-desktop/nx-media-hub -d
+./build-desktop/nx-media-hub -d            # -p <url> abre o player direto
+ctest --test-dir build-desktop               # testes do parser M3U
 ```
 
 ## Enviar ao Switch
@@ -29,3 +30,10 @@ docker run --rm --network host -v "$(pwd):/data" devkitpro/devkita64:20251117 \
   nxlink -s -a <IP_DO_SWITCH> /data/cmake-build-switch/nx-media-hub.nro
 ```
 Ou copie o `.nro` para `/switch/nx-media-hub/` no cartão SD.
+
+## Configuração
+Na primeira execução o app cria `config.json` em `sdmc:/switch/nx-media-hub/` (desktop: `~/.config/nx-media-hub/`):
+```json
+{ "tmdbApiKey": "", "addons": [], "m3uUrls": ["https://iptv-org.github.io/iptv/countries/br.m3u"] }
+```
+`m3uUrls` aceita URLs ou caminhos locais (ex.: `sdmc:/switch/nx-media-hub/lista.m3u`).

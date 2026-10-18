@@ -1,0 +1,7 @@
+#EXTM3U x-tvg-url="https://example.com/epg.xml"
+#EXTINF:-1 tvg-id="globo.br" tvg-name="Globo" tvg-logo="https://example.com/globo.png" group-title="Canais Abertos",Globo SP
+https://example.com/globo/index.m3u8
+#EXTINF:-1 tvg-name="Esportes, Um" group-title="Esportes;Notícias",Canal Esportes 1
+https://example.com/esportes/index.m3u8
+#EXTINF:-1 tvg-name="Fallback Name",
+https://example.com/fallback.m3u8

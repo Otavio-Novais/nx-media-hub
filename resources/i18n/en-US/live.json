@@ -1,0 +1,8 @@
+{
+  "loading": "Loading channels...",
+  "no_lists": "No M3U list configured. Add URLs to m3uUrls in config.json.",
+  "empty": "No channels found in the configured lists.",
+  "error": "Could not load the lists:",
+  "all": "All",
+  "others": "Others"
+}
