@@ -95,7 +95,7 @@ struct StreamSource {
 
 ### 4.4. Módulo 3: Configuração do `libmpv` no Switch
 Para garantir reprodução fluida em 1080p60 sem travar a thread principal da interface gráfica:
-- **Hardware Decoding:** Ativar `mpv_set_option_string(mpv, "hwdec", "auto")` (utiliza o decodificador nativo do Tegra).
+- **Hardware Decoding:** Usar `hwdec=nvtegra-copy` (NVDEC do Tegra). O libmpv OpenGL não tem interop `nvtegra` (só o build deko3d); com `hwdec=nvtegra` o mpv cai silenciosamente para decodificação por software.
 - **Cache de Rede:** Configurar `demuxer-max-bytes` (ex: `64MiB`) e `cache=yes` para evitar engasgos no Wi-Fi do Switch.
 - **Injeção de Headers:** Antes do comando `loadfile`, aplicar os cabeçalhos presentes no `StreamSource`:
   ```cpp
@@ -147,7 +147,7 @@ docker run --rm -v "$(pwd):/project" -w /project devkitpro/devkita64:latest bash
 ---
 
 ## 8. Roadmap de Implementação (Fases)
-- [ ] **Fase 1 (Base & Player):** Configurar template CMake com Borealis + `libmpv` e reproduzir um vídeo `.m3u8` de teste com controles de Play/Pause, Seek e troca de áudio/legenda.
+- [x] **Fase 1 (Base & Player):** Configurar template CMake com Borealis + `libmpv` e reproduzir um vídeo `.m3u8` de teste com controles de Play/Pause, Seek e troca de áudio/legenda.
 - [ ] **Fase 2 (TV Ao Vivo & Esportes):** Implementar `M3uParser`, carregar lista do cartão SD/URL e criar a aba `LiveTvTab` dividida por categorias.
 - [ ] **Fase 3 (Catálogo VOD):** Integrar `TmdbClient` com busca em português, telas de detalhes de filmes e seletor de temporadas/episódios para séries.
 - [ ] **Fase 4 (Provedores / Addons):** Implementar `AddonClient` para buscar as streams de um filme/episódio e abrir o modal de seleção de fonte.
