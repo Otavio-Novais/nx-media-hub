@@ -1,0 +1,10 @@
+{
+  "title": "NX Media Hub",
+  "tabs": {
+    "home": "Início",
+    "catalog": "Filmes e Séries",
+    "live": "TV ao Vivo",
+    "settings": "Configurações"
+  },
+  "placeholder": "Em construção"
+}
