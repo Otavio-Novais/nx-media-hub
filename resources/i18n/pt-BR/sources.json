@@ -1,0 +1,8 @@
+{
+  "pick": "Escolha a fonte",
+  "searching": "Buscando fontes nos addons...",
+  "none": "Nenhuma fonte encontrada para este título",
+  "addon_error": "Os addons não responderam (veja os logs)",
+  "no_addons": "Nenhum addon configurado (addons no config.json)",
+  "no_imdb": "Este título não tem ID do IMDb para buscar fontes"
+}

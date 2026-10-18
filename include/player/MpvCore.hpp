@@ -63,7 +63,13 @@ private:
     mpv_handle* mpv                  = nullptr;
     mpv_render_context* renderCtx    = nullptr;
     std::string defaultUserAgent;
-    std::vector<SubtitleTrack> pendingSubtitles;
+    void addSubtitles();
+
+    // External subtitles are downloaded and converted to UTF-8 by the app (the Switch libmpv has no
+    // iconv), then added as memory:// once both they and the file are ready
+    int streamGeneration = 0;  // ignores subtitle downloads of a previous stream
+    bool fileLoaded      = false;
+    std::vector<SubtitleTrack> readySubtitles;  // url = "memory://<utf-8 text>" (or the original URL)
 
     brls::Rect rect;
     GLint defaultFramebuffer = 0;

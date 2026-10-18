@@ -1,0 +1,8 @@
+{
+  "pick": "Choose a source",
+  "searching": "Searching addons for sources...",
+  "none": "No source found for this title",
+  "addon_error": "The addons did not respond (see the logs)",
+  "no_addons": "No addon configured (addons in config.json)",
+  "no_imdb": "This title has no IMDb ID to look up sources"
+}

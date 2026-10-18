@@ -1,0 +1,16 @@
+{
+  "streams": [
+    {
+      "name": "Teste\nHLS",
+      "description": "Episódio de teste (vídeo Big Buck Bunny)",
+      "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+      "subtitles": [
+        {
+          "id": "sintel-pt",
+          "lang": "por",
+          "url": "https://durian.blender.org/wp-content/content/subtitles/sintel_pt.srt"
+        }
+      ]
+    }
+  ]
+}

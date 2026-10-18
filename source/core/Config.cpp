@@ -14,6 +14,21 @@ const char* DEFAULT_M3U = "https://iptv-org.github.io/iptv/countries/br.m3u";
 #ifndef DEFAULT_TMDB_API_KEY
 #define DEFAULT_TMDB_API_KEY ""
 #endif
+#ifndef DEFAULT_ADDONS
+#define DEFAULT_ADDONS ""  // comma-separated
+#endif
+
+std::vector<std::string> splitList(const std::string& list) {
+    std::vector<std::string> items;
+    size_t start = 0;
+    while (start < list.size()) {
+        size_t end = list.find(',', start);
+        if (end == std::string::npos) end = list.size();
+        if (end > start) items.push_back(list.substr(start, end - start));
+        start = end + 1;
+    }
+    return items;
+}
 
 std::string configPath() { return Config::dataDir() + "/config.json"; }
 
@@ -37,10 +52,14 @@ std::string Config::dataDir() {
 
 void Config::load() {
     loadFile();
-    // Build-time default (from .env): used when the user has not set a key, never written to config.json
+    // Build-time defaults (from .env): used when config.json leaves them empty, never written back
     if (tmdbApiKey.empty()) {
         tmdbApiKey       = DEFAULT_TMDB_API_KEY;
         tmdbKeyIsDefault = !tmdbApiKey.empty();
+    }
+    if (addons.empty()) {
+        addons           = splitList(DEFAULT_ADDONS);
+        addonsAreDefault = !addons.empty();
     }
 }
 
@@ -75,7 +94,9 @@ void Config::save() const {
     std::error_code ec;
     std::filesystem::create_directories(dataDir(), ec);
     nlohmann::json json = {
-        {"tmdbApiKey", tmdbKeyIsDefault ? "" : tmdbApiKey}, {"addons", addons}, {"m3uUrls", m3uUrls}};
+        {"tmdbApiKey", tmdbKeyIsDefault ? "" : tmdbApiKey},
+        {"addons", addonsAreDefault ? std::vector<std::string>{} : addons},
+        {"m3uUrls", m3uUrls}};
     std::ofstream file(configPath());
     if (!file) {
         brls::Logger::error("config: cannot write {}", configPath());

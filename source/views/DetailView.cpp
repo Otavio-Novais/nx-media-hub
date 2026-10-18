@@ -2,7 +2,10 @@
 
 #include "core/Background.hpp"
 
+#include "api/AddonClient.hpp"
 #include "api/TmdbClient.hpp"
+#include "core/Config.hpp"
+#include "views/SourcePicker.hpp"
 
 using namespace brls::literals;
 
@@ -123,8 +126,34 @@ void DetailView::showEpisodes(const std::vector<Episode>& episodes, const std::s
 }
 
 void DetailView::play(int season, int episode) {
-    // Stream sources (Stremio addons) arrive in phase 4
-    (void)season;
-    (void)episode;
-    brls::Application::notify("detail/sources_soon"_i18n);
+    if (details.imdbId.empty()) {
+        // Details not loaded yet, or TMDB has no IMDb id for this title
+        brls::Application::notify(details.item.tmdbId == 0 ? "catalog/loading"_i18n : "sources/no_imdb"_i18n);
+        return;
+    }
+    std::vector<std::string> addons = Config::instance().addons;
+    if (addons.empty()) {
+        brls::Application::notify("sources/no_addons"_i18n);
+        return;
+    }
+
+    std::string playerTitle = item.title;
+    if (item.type == MediaType::Series) playerTitle += fmt::format(" · T{}E{}", season, episode);
+    brls::Application::notify("sources/searching"_i18n);
+
+    MediaType type     = item.type;
+    std::string imdbId = details.imdbId;
+    ASYNC_RETAIN
+    runInBackground([ASYNC_TOKEN, addons, type, imdbId, season, episode, playerTitle] {
+        std::string errors;
+        auto streams = AddonClient::fetchStreams(addons, type, imdbId, season, episode, errors);
+        brls::sync([ASYNC_TOKEN, streams, errors, playerTitle] {
+            ASYNC_RELEASE
+            if (streams.empty()) {
+                brls::Application::notify(errors.empty() ? "sources/none"_i18n : "sources/addon_error"_i18n);
+                return;
+            }
+            SourcePicker::show(streams, playerTitle);
+        });
+    });
 }

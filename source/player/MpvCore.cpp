@@ -6,6 +6,10 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+#include "api/HttpClient.hpp"
+#include "core/Background.hpp"
+#include "core/TextEncoding.hpp"
+
 namespace {
 
 const char* VERTEX_SHADER =
@@ -88,6 +92,12 @@ MpvCore::MpvCore() {
     mpv_set_option_string(mpv, "demuxer-lavf-probescore", "24");
 
 #ifdef __SWITCH__
+    // No fontconfig on the Switch: libass loads the fonts from romfs and uses the system font
+    // (romfs:/font/font.ttf, see CMakeLists.txt) for subtitles
+    mpv_set_option_string(mpv, "sub-font-provider", "none");
+    mpv_set_option_string(mpv, "sub-fonts-dir", "romfs:/font");
+    mpv_set_option_string(mpv, "osd-fonts-dir", "romfs:/font");
+    mpv_set_option_string(mpv, "sub-font", "nintendo_udsg-r_std_003");
     // The OpenGL libmpv build has no nvtegra interop (only the deko3d one does): decode on NVDEC and copy
     // the frames back, otherwise mpv silently falls back to software decoding
     mpv_set_option_string(mpv, "hwdec", "nvtegra-copy");
@@ -227,7 +237,26 @@ void MpvCore::clean() {
 void MpvCore::loadStream(const StreamSource& source) {
     error.clear();
     position = duration = 0;
-    pendingSubtitles    = source.subtitles;
+    fileLoaded          = false;
+    readySubtitles.clear();
+    int generation = ++streamGeneration;
+    if (!source.subtitles.empty()) {
+        runInBackground([generation, subtitles = source.subtitles]() mutable {
+            for (auto& sub : subtitles) {
+                HttpResponse response = HttpClient::get(sub.url);
+                if (response.ok() && !response.body.empty())
+                    sub.url = "memory://" + TextEncoding::toUtf8(response.body);
+                else
+                    brls::Logger::warning("subtitle {} failed, letting mpv try it", sub.url);
+            }
+            brls::sync([generation, subtitles] {
+                MpvCore& core = MpvCore::instance();
+                if (generation != core.streamGeneration) return;
+                core.readySubtitles = subtitles;
+                if (core.fileLoaded) core.addSubtitles();
+            });
+        });
+    }
 
     // These properties persist across files: always overwrite them
     mpv_set_property_string(mpv, "referrer", source.referer.c_str());
@@ -254,12 +283,30 @@ void MpvCore::loadStream(const StreamSource& source) {
 
 void MpvCore::stop() {
     command({"stop"});
-    pendingSubtitles.clear();
+    streamGeneration++;
+    readySubtitles.clear();
     // Clear the last frame so the next video does not start with it
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT);
     glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebuffer);
+}
+
+void MpvCore::addSubtitles() {
+    // Selects the first Portuguese subtitle (or the first one when there is none)
+    size_t selected = 0;
+    for (size_t i = 0; i < readySubtitles.size(); i++) {
+        const std::string& lang = readySubtitles[i].language;
+        if (lang.rfind("pt", 0) == 0 || lang.rfind("por", 0) == 0) {
+            selected = i;
+            break;
+        }
+    }
+    for (size_t i = 0; i < readySubtitles.size(); i++) {
+        const auto& sub = readySubtitles[i];
+        command({"sub-add", sub.url, i == selected ? "select" : "auto", sub.language, sub.language});
+    }
+    readySubtitles.clear();
 }
 
 void MpvCore::togglePause() { command({"cycle", "pause"}); }
@@ -390,11 +437,8 @@ void MpvCore::handleEvents() {
                 loading = true;
                 break;
             case MPV_EVENT_FILE_LOADED:
-                for (size_t i = 0; i < pendingSubtitles.size(); i++) {
-                    const auto& sub = pendingSubtitles[i];
-                    command({"sub-add", sub.url, i == 0 ? "select" : "auto", sub.language, sub.language});
-                }
-                pendingSubtitles.clear();
+                fileLoaded = true;
+                addSubtitles();
                 break;
             case MPV_EVENT_PLAYBACK_RESTART:
                 loading = false;

@@ -24,4 +24,5 @@ private:
     void loadFile();
 
     bool tmdbKeyIsDefault = false;  // key came from the build (.env), not from config.json
+    bool addonsAreDefault = false;  // same for the addon list
 };

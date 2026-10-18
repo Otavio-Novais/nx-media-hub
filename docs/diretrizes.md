@@ -150,7 +150,7 @@ docker run --rm -v "$(pwd):/project" -w /project devkitpro/devkita64:latest bash
 - [x] **Fase 1 (Base & Player):** Configurar template CMake com Borealis + `libmpv` e reproduzir um vídeo `.m3u8` de teste com controles de Play/Pause, Seek e troca de áudio/legenda.
 - [x] **Fase 2 (TV Ao Vivo & Esportes):** Implementar `M3uParser`, carregar lista do cartão SD/URL e criar a aba `LiveTvTab` dividida por categorias.
 - [x] **Fase 3 (Catálogo VOD):** Integrar `TmdbClient` com busca em português, telas de detalhes de filmes e seletor de temporadas/episódios para séries.
-- [ ] **Fase 4 (Provedores / Addons):** Implementar `AddonClient` para buscar as streams de um filme/episódio e abrir o modal de seleção de fonte.
+- [x] **Fase 4 (Provedores / Addons):** Implementar `AddonClient` para buscar as streams de um filme/episódio e abrir o modal de seleção de fonte.
 - [ ] **Fase 5 (Polimento):** Implementar histórico ("Continuar Assistindo"), favoritos e arquivo `config.json` editável.
 ---
 
@@ -160,6 +160,6 @@ docker run --rm -v "$(pwd):/project" -w /project devkitpro/devkita64:latest bash
 - **Crash nativo intermitente:** fechamentos sem log ocorreram com requisições HTTPS concorrentes; a serialização no `HttpClient` é a mitigação atual (hipótese: mbedtls do curl sem suporte a threads no Switch). Também ocorreu um fechamento ao abrir/fechar uma série repetidamente (antes da serialização) — revalidar.
 - **`std::thread` não funciona no Switch** (devkitA64 lança "Function not implemented"): usar `runInBackground` (pthread) em `core/Background.hpp`.
 - **TLS sem verificação de certificado no Switch** (sem CA store acessível, mesmo padrão do wiliwili).
-- **Legendas:** o libmpv registrou "can't find selected font provider" — validar renderização de legendas antes/na Fase 4.
+- **Legendas (resolvido na Fase 4):** sem fontconfig no Switch, o libass usa `romfs:/font/font.ttf`; o libmpv do Switch não tem iconv, então o app converte legendas externas para UTF-8 (`core/TextEncoding`) e as entrega via `memory://`. Legendas embutidas no arquivo (MKV) em Latin-1 continuam sem conversão.
 - **Apple BipBop (HLS de teste):** falha de handshake TLS do ffmpeg com o CDN da Apple.
 - **Chave do TMDB:** lida do `.env` no build como padrão quando `config.json` não tem `tmdbApiKey`; o `.nro` resultante contém a chave (não distribuir).

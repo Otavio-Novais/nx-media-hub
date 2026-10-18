@@ -1,0 +1,16 @@
+{
+  "id": "local.nxmediahub.test",
+  "version": "1.0.0",
+  "name": "NX Media Hub - Teste",
+  "description": "Addon de teste local com filmes abertos da Blender Foundation (Creative Commons)",
+  "resources": [
+    "stream"
+  ],
+  "types": [
+    "movie",
+    "series"
+  ],
+  "idPrefixes": [
+    "tt"
+  ]
+}

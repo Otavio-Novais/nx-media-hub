@@ -1,0 +1,39 @@
+{
+  "streams": [
+    {
+      "name": "Teste\n1080p",
+      "description": "Sintel (MKV)\nLegendas PT/EN externas",
+      "url": "https://download.blender.org/durian/movies/Sintel.2010.1080p.mkv",
+      "subtitles": [
+        {
+          "id": "sintel-pt",
+          "lang": "por",
+          "url": "https://durian.blender.org/wp-content/content/subtitles/sintel_pt.srt"
+        },
+        {
+          "id": "sintel-en",
+          "lang": "eng",
+          "url": "https://durian.blender.org/wp-content/content/subtitles/sintel_en.srt"
+        }
+      ]
+    },
+    {
+      "name": "Teste\n720p",
+      "description": "Trailer (MP4)\nCom proxyHeaders",
+      "url": "https://download.blender.org/durian/trailer/sintel_trailer-720p.mp4",
+      "behaviorHints": {
+        "notWebReady": true,
+        "proxyHeaders": {
+          "request": {
+            "User-Agent": "NXMediaHub-Test/1.0",
+            "Referer": "https://durian.blender.org/"
+          }
+        }
+      }
+    },
+    {
+      "name": "Torrent",
+      "infoHash": "08ada5a7a6183aae1e09d831df6748d566095a10"
+    }
+  ]
+}

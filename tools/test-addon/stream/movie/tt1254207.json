@@ -1,0 +1,9 @@
+{
+  "streams": [
+    {
+      "name": "Teste\n1080p",
+      "description": "Big Buck Bunny (HLS)",
+      "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+    }
+  ]
+}

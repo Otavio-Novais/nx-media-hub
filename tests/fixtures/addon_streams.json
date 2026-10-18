@@ -1,0 +1,24 @@
+{
+  "streams": [
+    {
+      "name": "Addon\n1080p",
+      "description": "Dublado PT-BR\n2.1 GB",
+      "url": "https://cdn.example.com/movie.m3u8",
+      "behaviorHints": {
+        "notWebReady": true,
+        "proxyHeaders": {
+          "request": { "User-Agent": "Stremio", "Referer": "https://ref.example.com/", "Origin": "https://ref.example.com" }
+        }
+      },
+      "subtitles": [
+        { "id": "pt1", "lang": "por", "url": "https://subs.example.com/pt.srt" },
+        { "id": "en1", "lang": "eng", "url": "https://subs.example.com/en.vtt" }
+      ]
+    },
+    { "title": "Legado: só title", "url": "http://cdn.example.com/legacy.mp4" },
+    { "name": "Torrent", "infoHash": "0123456789abcdef0123456789abcdef01234567", "fileIdx": 0 },
+    { "name": "YouTube", "ytId": "dQw4w9WgXcQ" },
+    { "name": "Navegador", "externalUrl": "https://example.com/watch" },
+    { "url": "https://cdn.example.com/no-name.mp4" }
+  ]
+}
