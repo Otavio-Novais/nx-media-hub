@@ -81,7 +81,32 @@ static void testRobustness() {
     CHECK(M3uParser::parse("not a playlist").empty());
 }
 
+static void testDedupe() {
+    auto channel = [](const std::string& name, const std::string& url, std::vector<std::string> groups,
+                      const std::string& logo = "") {
+        Channel c;
+        c.name       = name;
+        c.logo       = logo;
+        c.groups     = std::move(groups);
+        c.stream.url = url;
+        return c;
+    };
+    // Same channel in the Portuguese list (General) and in the News list (News)
+    auto merged = M3uParser::dedupe({
+        channel("Canal A", "https://a/x.m3u8", {"General"}),
+        channel("Canal B", "https://b/x.m3u8", {"Sports"}, "https://b/logo.png"),
+        channel("Canal A (news)", "https://a/x.m3u8", {"News", "General"}, "https://a/logo.png"),
+        channel("Canal C", "https://c/x.m3u8", {}),
+    });
+    CHECK(merged.size() == 3);
+    CHECK(merged[0].name == "Canal A");  // first occurrence wins, order kept
+    CHECK(merged[0].groups.size() == 2 && merged[0].groups[0] == "General" && merged[0].groups[1] == "News");
+    CHECK(merged[0].logo == "https://a/logo.png");  // missing logo filled from the duplicate
+    CHECK(merged[1].name == "Canal B" && merged[2].name == "Canal C");
+}
+
 int main() {
+    testDedupe();
     testBasicAttributes();
     testHeaders();
     testRobustness();

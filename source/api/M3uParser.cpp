@@ -1,7 +1,9 @@
 #include "api/M3uParser.hpp"
 
+#include <algorithm>
 #include <cctype>
 #include <map>
+#include <unordered_map>
 #include <string>
 
 namespace {
@@ -130,6 +132,24 @@ std::vector<Channel> parse(std::string_view content) {
         }
     }
     return channels;
+}
+
+std::vector<Channel> dedupe(std::vector<Channel> channels) {
+    std::vector<Channel> unique;
+    std::unordered_map<std::string, size_t> byUrl;
+    for (auto& channel : channels) {
+        auto [it, inserted] = byUrl.try_emplace(channel.stream.url, unique.size());
+        if (inserted) {
+            unique.push_back(std::move(channel));
+            continue;
+        }
+        Channel& kept = unique[it->second];
+        for (auto& group : channel.groups)
+            if (std::find(kept.groups.begin(), kept.groups.end(), group) == kept.groups.end())
+                kept.groups.push_back(group);
+        if (kept.logo.empty()) kept.logo = channel.logo;
+    }
+    return unique;
 }
 
 }  // namespace M3uParser

@@ -145,6 +145,9 @@ void LiveTvTab::loadLists() {
             brls::Logger::info("live: {} channels from {}", parsed.size(), source);
             std::move(parsed.begin(), parsed.end(), std::back_inserter(loaded));
         }
+        size_t total = loaded.size();
+        loaded       = M3uParser::dedupe(std::move(loaded));
+        if (loaded.size() < total) brls::Logger::info("live: {} duplicated channels merged", total - loaded.size());
         brls::sync([loaded = std::move(loaded), errors]() mutable {
             listsLoading   = false;
             cachedChannels = loaded;
