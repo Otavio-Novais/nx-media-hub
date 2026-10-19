@@ -43,7 +43,8 @@ Na primeira execução o app cria `sdmc:/switch/nx-media-hub/config.json` (no de
 {
   "tmdbApiKey": "",
   "addons": [],
-  "m3uUrls": ["https://iptv-org.github.io/iptv/countries/br.m3u"]
+  "m3uUrls": ["https://iptv-org.github.io/iptv/countries/br.m3u"],
+  "countries": []
 }
 ```
 
@@ -52,6 +53,7 @@ Na primeira execução o app cria `sdmc:/switch/nx-media-hub/config.json` (no de
 | `tmdbApiKey` | Chave da API do TMDB (v3), gratuita em themoviedb.org → Configurações → API. Necessária para o catálogo. |
 | `addons` | Lista de addons do Stremio (veja abaixo). |
 | `m3uUrls` | Listas de canais: URLs ou arquivos no SD (ex.: `sdmc:/switch/nx-media-hub/lista.m3u`). |
+| `countries` | Opcional. Mostra só canais desses países, pelo `tvg-id` das listas do iptv-org (`Canal.<país>@<versão>`), e esconde versões regionais de outros países (`@DK`, `@Poland`…). Ex.: `["br","pt","us","uk","ca"]` (o iptv-org usa `uk` para o Reino Unido). Vazio = todos. |
 
 Para editar pelo PC sem tirar o cartão: no Switch abra o **DBI → Run MTP responder**, conecte o cabo USB e edite o arquivo. O `config.json` é lido quando o app abre: **feche e abra o app depois de editar**. Se o JSON estiver inválido, o app usa os padrões e **não** sobrescreve seu arquivo.
 

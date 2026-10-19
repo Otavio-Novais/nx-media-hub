@@ -86,6 +86,7 @@ void Config::loadFile() {
         tmdbApiKey = json.value("tmdbApiKey", "");
         addons     = json.value("addons", std::vector<std::string>{});
         m3uUrls    = json.value("m3uUrls", std::vector<std::string>{});
+        countries  = json.value("countries", std::vector<std::string>{});
     } catch (const nlohmann::json::exception& e) {
         // Wrong field types (ex: "m3uUrls": "url" instead of a list)
         brls::Logger::error("config: invalid field in {}: {}", configPath(), e.what());
@@ -97,7 +98,8 @@ void Config::save() const {
     nlohmann::json json = {
         {"tmdbApiKey", tmdbKeyIsDefault ? "" : tmdbApiKey},
         {"addons", addonsAreDefault ? std::vector<std::string>{} : addons},
-        {"m3uUrls", m3uUrls}};
+        {"m3uUrls", m3uUrls},
+        {"countries", countries}};
     if (!Storage::writeJson(configPath(), json)) brls::Logger::error("config: cannot write {}", configPath());
 }
 

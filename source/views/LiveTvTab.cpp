@@ -131,7 +131,8 @@ void LiveTvTab::loadLists() {
     listsLoading = true;
 
     // Own thread: the shared brls::async queue is busy with image downloads
-    runInBackground([sources] {
+    std::vector<std::string> countries = Config::instance().countries;
+    runInBackground([sources, countries] {
         std::vector<Channel> loaded;
         std::string errors;
         for (const auto& source : sources) {
@@ -148,6 +149,10 @@ void LiveTvTab::loadLists() {
         size_t total = loaded.size();
         loaded       = M3uParser::dedupe(std::move(loaded));
         if (loaded.size() < total) brls::Logger::info("live: {} duplicated channels merged", total - loaded.size());
+        size_t unique = loaded.size();
+        loaded        = M3uParser::filterByCountry(std::move(loaded), countries);
+        if (loaded.size() < unique)
+            brls::Logger::info("live: {} channels from other countries hidden ({} left)", unique - loaded.size(), loaded.size());
         brls::sync([loaded = std::move(loaded), errors]() mutable {
             listsLoading   = false;
             cachedChannels = loaded;

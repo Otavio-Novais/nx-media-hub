@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <map>
+#include <set>
 #include <unordered_map>
 #include <string>
 
@@ -113,6 +114,7 @@ std::vector<Channel> parse(std::string_view content) {
             hasInfo      = true;
             pending.name = !info.title.empty() ? info.title : info.attributes["tvg-name"];
             pending.logo = info.attributes["tvg-logo"];
+            pending.tvgId = info.attributes["tvg-id"];
             pending.groups = splitGroups(info.attributes["group-title"]);
         } else if (startsWith(line, "#EXTGRP:")) {
             if (pending.groups.empty()) pending.groups = splitGroups(line.substr(8));
@@ -150,6 +152,51 @@ std::vector<Channel> dedupe(std::vector<Channel> channels) {
         if (kept.logo.empty()) kept.logo = channel.logo;
     }
     return unique;
+}
+
+std::vector<Channel> filterByCountry(std::vector<Channel> channels, const std::vector<std::string>& countries) {
+    if (countries.empty()) return channels;
+    std::set<std::string> allowed;
+    for (const auto& c : countries) {
+        std::string lower;
+        for (char ch : c) lower += (char)std::tolower((unsigned char)ch);
+        allowed.insert(lower);
+    }
+    // Regional feed names seen in iptv-org ids ("Channel.us@Poland"): country -> code, multi-country region -> ""
+    static const std::map<std::string, std::string> regions = {
+        {"sweden", "se"}, {"germany", "de"}, {"norway", "no"}, {"denmark", "dk"}, {"finland", "fi"},
+        {"poland", "pl"}, {"romania", "ro"}, {"hungary", "hu"}, {"czechrepublic", "cz"}, {"netherlands", "nl"},
+        {"france", "fr"}, {"italy", "it"}, {"spain", "es"}, {"turkey", "tr"}, {"russia", "ru"}, {"india", "in"},
+        {"vietnam", "vn"}, {"arabia", "sa"}, {"latinamerica", ""}, {"europe", ""}, {"asia", ""}, {"adria", ""},
+        {"middleeast", ""}, {"nordic", ""}, {"balkans", ""}, {"cee", ""}, {"mena", ""}, {"africa", ""}};
+
+    std::vector<Channel> kept;
+    for (auto& channel : channels) {
+        // "Name.cc" or "Name.cc@Feed"
+        const std::string& id = channel.tvgId;
+        size_t at             = id.find('@');
+        std::string base      = id.substr(0, at);
+        size_t dot            = base.rfind('.');
+        if (dot == std::string::npos || base.size() - dot != 3) {
+            kept.push_back(std::move(channel));  // not an iptv-org style id: no country information
+            continue;
+        }
+        std::string country = base.substr(dot + 1);
+        if (!allowed.count(country)) continue;
+
+        std::string feed = at == std::string::npos ? "" : id.substr(at + 1);
+        std::string lowerFeed;
+        for (char ch : feed) lowerFeed += (char)std::tolower((unsigned char)ch);
+        if (lowerFeed.size() > 2 && lowerFeed.compare(lowerFeed.size() - 2, 2, "hd") == 0)
+            lowerFeed.resize(lowerFeed.size() - 2);
+        bool countryCodeFeed = feed.size() == 2 && std::isupper((unsigned char)feed[0]) &&
+                               std::isupper((unsigned char)feed[1]) && feed != "HD" && feed != "SD";
+        if (countryCodeFeed && !allowed.count(lowerFeed)) continue;  // "@DK", "@NO"...
+        auto region = regions.find(lowerFeed);
+        if (region != regions.end() && !allowed.count(region->second)) continue;  // "@Poland", "@Europe"...
+        kept.push_back(std::move(channel));
+    }
+    return kept;
 }
 
 }  // namespace M3uParser

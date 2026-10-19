@@ -36,6 +36,7 @@ static void testBasicAttributes() {
     CHECK(globo.stream.url == "https://example.com/globo/index.m3u8");
     CHECK(globo.stream.title == "Globo SP");
     CHECK(globo.stream.isLive);
+    CHECK(globo.tvgId == "globo.br");
 
     // Several categories separated by ";" and a comma inside a quoted attribute
     const auto& multi = channels[1];
@@ -105,7 +106,38 @@ static void testDedupe() {
     CHECK(merged[1].name == "Canal B" && merged[2].name == "Canal C");
 }
 
+static void testFilterByCountry() {
+    auto channel = [](const std::string& name, const std::string& tvgId) {
+        Channel c;
+        c.name       = name;
+        c.tvgId      = tvgId;
+        c.stream.url = "https://x/" + name;
+        return c;
+    };
+    std::vector<std::string> countries = {"br", "pt", "us", "uk", "ca"};
+    auto kept = M3uParser::filterByCountry(
+        {
+            channel("Globo", "Globo.br@SD"),
+            channel("CNN", "CNN.us@East"),
+            channel("BBC News", "BBCNews.uk@HD"),
+            channel("Auction Hunters (Sweden)", "AuctionHunters.se@SD"),  // Swedish channel
+            channel("Auction Hunters NO", "AuctionHunters.us@NO"),          // US channel, Norwegian feed
+            channel("AMC Europe Romania", "AMCEurope.us@Romania"),           // regional feed by name
+            channel("Animal Planet (Poland)", "AnimalPlanet.pl@HD"),
+            channel("TV Canada", "TVCanada.ca@CA"),                          // feed of an allowed country
+            channel("Lista pessoal", ""),                                    // no tvg-id: kept
+        },
+        countries);
+    std::vector<std::string> names;
+    for (const auto& c : kept) names.push_back(c.name);
+    CHECK((names == std::vector<std::string>{"Globo", "CNN", "BBC News", "TV Canada", "Lista pessoal"}));
+
+    // Empty list: no filtering
+    CHECK(M3uParser::filterByCountry({channel("A", "A.se@SD")}, {}).size() == 1);
+}
+
 int main() {
+    testFilterByCountry();
     testDedupe();
     testBasicAttributes();
     testHeaders();

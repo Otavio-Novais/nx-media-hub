@@ -18,6 +18,9 @@ public:
     std::string tmdbApiKey;
     std::vector<std::string> addons;   // Stremio addon base URLs
     std::vector<std::string> m3uUrls;  // M3U list URLs or local paths
+    // Live TV: only channels of these countries (tvg-id "Name.<cc>@Feed", ex: ["br", "pt", "us", "uk"]).
+    // Empty = all channels.
+    std::vector<std::string> countries;
 
     // Settings screen: update a field and write config.json (a value typed by the user replaces the .env default)
     void setTmdbApiKey(const std::string& key);

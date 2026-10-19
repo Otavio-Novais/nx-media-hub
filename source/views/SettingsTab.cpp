@@ -67,6 +67,9 @@ void SettingsTab::rebuild() {
     addHeader("settings/lists"_i18n);
     addUrlList(config.m3uUrls, "settings/add_list"_i18n, "settings/list_url"_i18n,
                [](std::vector<std::string> list) { Config::instance().setM3uUrls(list); });
+    std::string countries;
+    for (const auto& c : config.countries) countries += (countries.empty() ? "" : ", ") + c;
+    addCell("settings/countries"_i18n, countries.empty() ? "settings/all_countries"_i18n : countries);
     auto* note = new brls::Label();
     note->setText("settings/lists_note"_i18n);
     note->setFontSize(15);

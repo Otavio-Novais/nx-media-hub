@@ -9,6 +9,7 @@
 struct Channel {
     std::string name;
     std::string logo;
+    std::string tvgId;                // iptv-org style "Channel.<country>@<feed>", ex: "AuctionHunters.se@NO"
     std::vector<std::string> groups;  // from group-title (";"-separated) or #EXTGRP
     StreamSource stream;              // isLive = true
 };
