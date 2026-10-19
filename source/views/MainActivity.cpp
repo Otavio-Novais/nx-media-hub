@@ -1,5 +1,7 @@
 #include "views/MainActivity.hpp"
 
+#include "views/HomeTab.hpp"
+
 using namespace brls::literals;
 
 void MainActivity::onContentAvailable() {
@@ -10,3 +12,5 @@ void MainActivity::onContentAvailable() {
         dialog->open();
     }
 }
+
+void MainActivity::onResume() { HomeTab::refreshActive(); }

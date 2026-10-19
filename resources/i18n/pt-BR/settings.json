@@ -1,0 +1,18 @@
+{
+  "tmdb": "Catálogo (TMDB)",
+  "tmdb_key": "Chave da API do TMDB",
+  "tmdb_hint": "Chave v3 de themoviedb.org → Configurações → API",
+  "not_set": "Não configurada",
+  "from_build": "Padrão do build (.env)",
+  "addons": "Addons do Stremio",
+  "add_addon": "+ Adicionar addon",
+  "addon_url": "URL do addon (manifest.json)",
+  "lists": "Listas de TV ao vivo (M3U)",
+  "add_list": "+ Adicionar lista",
+  "list_url": "URL ou caminho da lista M3U",
+  "lists_note": "Mudanças nas listas valem ao recarregar a TV ao Vivo (X).",
+  "remove_confirm": "Remover?\n{}",
+  "about": "Sobre",
+  "version": "Versão",
+  "data_dir": "Pasta de dados"
+}

@@ -18,7 +18,14 @@ std::string streamPath(MediaType type, const std::string& imdbId, int season = 0
 // streams are skipped: the player only handles direct http(s) URLs.
 bool parseStreams(const std::string& json, std::vector<StreamSource>& out);
 
-// Blocking (wrap it in runInBackground): asks every addon and concatenates their streams.
+// Readable single-line label: emojis the Switch font lacks are replaced (👤 -> "Seeds", 💾/⚙️ -> "·") or removed
+std::string cleanLabel(const std::string& text);
+
+// Orders streams for the Switch: debrid-cached first ("[RD+]"), uncached ("[RD download]") last, then
+// Portuguese/dubbed, then 1080p > 720p > others > 4K (too heavy over the Switch Wi-Fi). Stable.
+void rankStreams(std::vector<StreamSource>& streams);
+
+// Blocking (wrap it in runInBackground): asks every addon, concatenates and ranks their streams.
 // `errors` lists the addons that failed; returns the streams found (possibly empty).
 std::vector<StreamSource> fetchStreams(const std::vector<std::string>& addons, MediaType type,
                                        const std::string& imdbId, int season, int episode, std::string& errors);

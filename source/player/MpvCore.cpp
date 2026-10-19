@@ -125,9 +125,9 @@ MpvCore::MpvCore() {
         mpv_terminate_destroy(mpv);
         brls::fatal("mpv: could not initialize");
     }
-    // Warnings from everything, plus the decoder choice (vd) to confirm hardware decoding
-    mpv_set_option_string(mpv, "msg-level", "all=warn,vd=v");
-    mpv_request_log_messages(mpv, "v");
+    // Warnings and errors only: verbose levels log every opened URL, and addon URLs carry API keys
+    // (the decoder in use is logged through the hwdec-current property)
+    mpv_request_log_messages(mpv, "warn");
 
     checkError(mpv_observe_property(mpv, CORE_IDLE, "core-idle", MPV_FORMAT_FLAG), "observe");
     checkError(mpv_observe_property(mpv, PAUSE, "pause", MPV_FORMAT_FLAG), "observe");
@@ -234,7 +234,7 @@ void MpvCore::clean() {
     brls::Application::getPlatform()->disableScreenDimming(false, "", "");
 }
 
-void MpvCore::loadStream(const StreamSource& source) {
+void MpvCore::loadStream(const StreamSource& source, double startAt) {
     error.clear();
     position = duration = 0;
     fileLoaded          = false;
@@ -247,7 +247,7 @@ void MpvCore::loadStream(const StreamSource& source) {
                 if (response.ok() && !response.body.empty())
                     sub.url = "memory://" + TextEncoding::toUtf8(response.body);
                 else
-                    brls::Logger::warning("subtitle {} failed, letting mpv try it", sub.url);
+                    brls::Logger::warning("subtitle {} failed, letting mpv try it", HttpClient::redact(sub.url));
             }
             brls::sync([generation, subtitles] {
                 MpvCore& core = MpvCore::instance();
@@ -277,8 +277,17 @@ void MpvCore::loadStream(const StreamSource& source) {
     node.u.list = &list;
     checkError(mpv_set_property(mpv, "http-header-fields", MPV_FORMAT_NODE, &node), "set http-header-fields");
 
-    brls::Logger::info("mpv: loading {}", source.url);
-    command({"loadfile", source.url, "replace"});
+    brls::Logger::info("mpv: loading {}", HttpClient::redact(source.url));
+    if (startAt <= 0) {
+        command({"loadfile", source.url, "replace"});
+    } else {
+        // Per-file options; mpv >= 0.38 (client API 2.3) added an index argument before them
+        std::string options = "start=" + std::to_string((int)startAt);
+        if (mpv_client_api_version() >= MPV_MAKE_VERSION(2, 3))
+            command({"loadfile", source.url, "replace", "-1", options});
+        else
+            command({"loadfile", source.url, "replace", options});
+    }
 }
 
 void MpvCore::stop() {

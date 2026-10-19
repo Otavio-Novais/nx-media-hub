@@ -9,6 +9,7 @@
 #include "api/HttpClient.hpp"
 #include "api/M3uParser.hpp"
 #include "core/Config.hpp"
+#include "core/Library.hpp"
 #include "player/PlayerActivity.hpp"
 
 using namespace brls::literals;
@@ -70,11 +71,19 @@ private:
 
 }  // namespace
 
-ChannelCell::ChannelCell() { this->inflateFromXMLRes("xml/cells/channel.xml"); }
+ChannelCell::ChannelCell() {
+    this->inflateFromXMLRes("xml/cells/channel.xml");
+    this->registerAction("live/favorite"_i18n, brls::BUTTON_Y, [this](brls::View*) {
+        bool added = Favorites::instance().toggle(channel);
+        brls::Application::notify(added ? "detail/favorite_added"_i18n : "detail/favorite_removed"_i18n);
+        return true;
+    });
+}
 
 ChannelCell* ChannelCell::create() { return new ChannelCell(); }
 
-void ChannelCell::setChannel(const Channel& channel) {
+void ChannelCell::setChannel(const Channel& newChannel) {
+    channel = newChannel;
     name->setText(channel.name);
     logo->setImageFromUrl(channel.logo);
 }

@@ -14,6 +14,9 @@ public:
 
     BRLS_BIND(RemoteImage, logo, "logo");
     BRLS_BIND(brls::Label, name, "name");
+
+private:
+    Channel channel;  // copy: the cell is recycled for other channels
 };
 
 // Live channels from the M3U lists in config.json: categories on the left, channels on the right.

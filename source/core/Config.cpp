@@ -1,5 +1,7 @@
 #include "core/Config.hpp"
 
+#include "core/Storage.hpp"
+
 #include <borealis/core/logger.hpp>
 #include <borealis/extern/nlohmann/json.hpp>
 #include <cstdlib>
@@ -64,6 +66,7 @@ void Config::load() {
 }
 
 void Config::loadFile() {
+    Storage::recoverTemp(configPath());
     std::ifstream file(configPath());
     if (!file) {
         brls::Logger::info("config: {} not found, creating defaults", configPath());
@@ -91,16 +94,26 @@ void Config::loadFile() {
 }
 
 void Config::save() const {
-    std::error_code ec;
-    std::filesystem::create_directories(dataDir(), ec);
     nlohmann::json json = {
         {"tmdbApiKey", tmdbKeyIsDefault ? "" : tmdbApiKey},
         {"addons", addonsAreDefault ? std::vector<std::string>{} : addons},
         {"m3uUrls", m3uUrls}};
-    std::ofstream file(configPath());
-    if (!file) {
-        brls::Logger::error("config: cannot write {}", configPath());
-        return;
-    }
-    file << json.dump(2) << "\n";
+    if (!Storage::writeJson(configPath(), json)) brls::Logger::error("config: cannot write {}", configPath());
+}
+
+void Config::setTmdbApiKey(const std::string& key) {
+    tmdbApiKey       = key;
+    tmdbKeyIsDefault = false;
+    save();
+}
+
+void Config::setAddons(const std::vector<std::string>& list) {
+    addons           = list;
+    addonsAreDefault = false;
+    save();
+}
+
+void Config::setM3uUrls(const std::vector<std::string>& list) {
+    m3uUrls = list;
+    save();
 }

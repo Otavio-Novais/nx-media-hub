@@ -1,0 +1,18 @@
+{
+  "tmdb": "Catalog (TMDB)",
+  "tmdb_key": "TMDB API key",
+  "tmdb_hint": "v3 key from themoviedb.org → Settings → API",
+  "not_set": "Not set",
+  "from_build": "Build default (.env)",
+  "addons": "Stremio addons",
+  "add_addon": "+ Add addon",
+  "addon_url": "Addon URL (manifest.json)",
+  "lists": "Live TV lists (M3U)",
+  "add_list": "+ Add list",
+  "list_url": "M3U list URL or path",
+  "lists_note": "List changes apply when Live TV is reloaded (X).",
+  "remove_confirm": "Remove?\n{}",
+  "about": "About",
+  "version": "Version",
+  "data_dir": "Data folder"
+}

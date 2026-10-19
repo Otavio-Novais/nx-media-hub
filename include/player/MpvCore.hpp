@@ -25,7 +25,8 @@ public:
     // Creates mpv on first use: call from the main thread after the window (GL context) exists.
     static MpvCore& instance();
 
-    void loadStream(const StreamSource& source);
+    // startAt: resume position in seconds (0 = from the beginning)
+    void loadStream(const StreamSource& source, double startAt = 0);
     void stop();
     void togglePause();
     void seekRelative(double seconds);

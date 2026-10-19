@@ -20,4 +20,7 @@ void init();
 HttpResponse get(const std::string& url, const std::map<std::string, std::string>& headers = {},
                  long timeoutSeconds = 30);
 
+// "https://host/secret/path?x=1" -> "https://host/…": for logs, since addon URLs carry API keys in the path
+std::string redact(const std::string& url);
+
 }  // namespace HttpClient

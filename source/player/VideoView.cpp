@@ -10,7 +10,8 @@ using namespace brls::literals;
 
 namespace {
 
-const brls::Time OSD_DURATION = 3 * 1000 * 1000;  // usec
+const brls::Time OSD_DURATION  = 3 * 1000 * 1000;   // usec
+const brls::Time SAVE_INTERVAL = 30 * 1000 * 1000;  // usec
 
 std::string formatTime(double seconds) {
     if (std::isnan(seconds) || seconds < 0) seconds = 0;
@@ -21,7 +22,8 @@ std::string formatTime(double seconds) {
 
 }  // namespace
 
-VideoView::VideoView(StreamSource src) : source(std::move(src)) {
+VideoView::VideoView(StreamSource src, std::function<void()> onSave)
+    : source(std::move(src)), onPeriodicSave(std::move(onSave)) {
     this->setFocusable(true);
     this->setHideHighlight(true);
     this->setGrow(1);
@@ -99,8 +101,15 @@ void VideoView::openTrackMenu(const std::string& type) {
 
 void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height, brls::Style style,
                      brls::FrameContext* ctx) {
-    MpvCore::instance().draw(brls::Rect(x, y, width, height), this->getAlpha());
+    auto& mpv = MpvCore::instance();
+    mpv.draw(brls::Rect(x, y, width, height), this->getAlpha());
     drawOsd(vg, x, y, width, height);
+
+    brls::Time now = brls::getCPUTimeUsec();
+    if (onPeriodicSave && !mpv.paused && !mpv.idle && now - lastSave > SAVE_INTERVAL) {
+        lastSave = now;
+        onPeriodicSave();
+    }
     brls::Box::draw(vg, x, y, width, height, style, ctx);
 }
 

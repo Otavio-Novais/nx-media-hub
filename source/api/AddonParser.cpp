@@ -1,5 +1,7 @@
 #include <borealis/extern/nlohmann/json.hpp>
+#include <algorithm>
 #include <cctype>
+#include <cstdint>
 
 #include "api/AddonClient.hpp"
 
@@ -22,6 +24,35 @@ std::string singleLine(std::string text) {
 }
 
 bool startsWith(const std::string& s, const std::string& prefix) { return s.rfind(prefix, 0) == 0; }
+
+bool contains(const std::string& haystack, const char* needle) { return haystack.find(needle) != std::string::npos; }
+
+// Decodes the UTF-8 sequence at `i` (advancing it); invalid bytes decode as themselves
+uint32_t nextCodePoint(const std::string& s, size_t& i) {
+    auto c   = (unsigned char)s[i];
+    int len  = c < 0x80 ? 1 : (c >> 5) == 0x6 ? 2 : (c >> 4) == 0xE ? 3 : (c >> 3) == 0x1E ? 4 : 1;
+    if (i + len > s.size()) len = 1;
+    uint32_t cp = len == 1 ? c : len == 2 ? (c & 0x1F) : len == 3 ? (c & 0x0F) : (c & 0x07);
+    for (int k = 1; k < len; k++) cp = (cp << 6) | ((unsigned char)s[i + k] & 0x3F);
+    i += len;
+    return cp;
+}
+
+int streamScore(const StreamSource& stream) {
+    std::string t;
+    for (char c : stream.title) t += (char)std::tolower((unsigned char)c);
+    int score = 0;
+    // Debrid cache markers used by Torrentio-like addons: "[RD+]" cached, "[RD download]" not yet
+    if (contains(t, "+]")) score += 1000;
+    if (contains(t, " download]")) score -= 1000;
+    if (contains(t, "dual") || contains(t, "dublado") || contains(t, "pt-br") || contains(t, "ptbr") ||
+        contains(t, "nacional") || contains(t, "portugu"))
+        score += 100;
+    if (contains(t, "2160p") || contains(t, "4k")) score -= 20;
+    else if (contains(t, "1080p")) score += 30;
+    else if (contains(t, "720p")) score += 20;
+    return score;
+}
 
 }  // namespace
 
@@ -54,7 +85,7 @@ bool parseStreams(const std::string& body, std::vector<StreamSource>& out) {
         source.url             = url;
         std::string name        = singleLine(str(s, "name"));
         std::string description = singleLine(!str(s, "description").empty() ? str(s, "description") : str(s, "title"));
-        source.title = name.empty() ? description : description.empty() ? name : name + " - " + description;
+        source.title = cleanLabel(name.empty() ? description : description.empty() ? name : name + " - " + description);
         if (source.title.empty()) source.title = url;
 
         if (s.contains("behaviorHints") && s["behaviorHints"].contains("proxyHeaders")) {
@@ -80,6 +111,34 @@ bool parseStreams(const std::string& body, std::vector<StreamSource>& out) {
         out.push_back(std::move(source));
     }
     return true;
+}
+
+std::string cleanLabel(const std::string& text) {
+    std::string out;
+    for (size_t i = 0; i < text.size();) {
+        size_t start = i;
+        uint32_t cp  = nextCodePoint(text, i);
+        if (cp == 0x1F464) out += " Seeds ";                       // 👤
+        else if (cp == 0x1F4BE || cp == 0x2699) out += " · ";      // 💾 ⚙
+        else if (cp >= 0x10000 || (cp >= 0x2600 && cp <= 0x27BF) || (cp >= 0x2B00 && cp <= 0x2BFF) ||
+                 (cp >= 0xFE00 && cp <= 0xFE0F) || cp == 0x200D)
+            out += ' ';                                              // other emojis, flags, joiners
+        else out.append(text, start, i - start);
+    }
+    // Collapse whitespace
+    std::string collapsed;
+    for (char c : out) {
+        bool space = c == ' ' || c == '\t';
+        if (space && (collapsed.empty() || collapsed.back() == ' ')) continue;
+        collapsed += space ? ' ' : c;
+    }
+    while (!collapsed.empty() && collapsed.back() == ' ') collapsed.pop_back();
+    return collapsed;
+}
+
+void rankStreams(std::vector<StreamSource>& streams) {
+    std::stable_sort(streams.begin(), streams.end(),
+                     [](const StreamSource& a, const StreamSource& b) { return streamScore(a) > streamScore(b); });
 }
 
 }  // namespace AddonClient

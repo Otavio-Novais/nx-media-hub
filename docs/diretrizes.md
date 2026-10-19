@@ -151,7 +151,7 @@ docker run --rm -v "$(pwd):/project" -w /project devkitpro/devkita64:latest bash
 - [x] **Fase 2 (TV Ao Vivo & Esportes):** Implementar `M3uParser`, carregar lista do cartão SD/URL e criar a aba `LiveTvTab` dividida por categorias.
 - [x] **Fase 3 (Catálogo VOD):** Integrar `TmdbClient` com busca em português, telas de detalhes de filmes e seletor de temporadas/episódios para séries.
 - [x] **Fase 4 (Provedores / Addons):** Implementar `AddonClient` para buscar as streams de um filme/episódio e abrir o modal de seleção de fonte.
-- [ ] **Fase 5 (Polimento):** Implementar histórico ("Continuar Assistindo"), favoritos e arquivo `config.json` editável.
+- [x] **Fase 5 (Polimento):** Implementar histórico ("Continuar Assistindo"), favoritos e arquivo `config.json` editável.
 ---
 
 ## 9. Pendências Conhecidas

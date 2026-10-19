@@ -9,5 +9,6 @@
   "no_tracks": "Nenhuma faixa disponível",
   "hints": " Pausar    ±10s    Áudio    Legendas    Voltar",
   "hints_paused": " Continuar    ±10s    Áudio    Legendas    Voltar",
-  "hints_live": " Áudio    Legendas    Voltar"
+  "hints_live": " Áudio    Legendas    Voltar",
+  "resuming": "Retomando de {}"
 }

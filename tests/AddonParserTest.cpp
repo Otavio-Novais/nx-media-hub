@@ -63,7 +63,41 @@ static void testInvalid() {
     CHECK(AddonClient::parseStreams("{\"streams\": []}", streams) && streams.empty());
 }
 
+static void testCleanLabel() {
+    using AddonClient::cleanLabel;
+    CHECK(cleanLabel("[RD+] Torrentio Sintel \U0001F464 3 \U0001F4BE 441.89 MB \u2699\uFE0F ThePirateBay") ==
+          "[RD+] Torrentio Sintel Seeds 3 · 441.89 MB · ThePirateBay");
+    // Flags (regional indicators) and other emojis disappear; accents stay
+    CHECK(cleanLabel("Dublado \U0001F1E7\U0001F1F7 / \U0001F1EC\U0001F1E7 Temporada 1ª") == "Dublado / Temporada 1ª");
+    CHECK(cleanLabel("  1080p   x264  ") == "1080p x264");
+}
+
+static void testRank() {
+    auto stream = [](const std::string& title) {
+        StreamSource s;
+        s.title = title;
+        return s;
+    };
+    std::vector<StreamSource> streams = {
+        stream("[RD download] Torrentio 1080p - Filme DUAL"),
+        stream("[RD+] Torrentio 4k - Filme 2160p"),
+        stream("[RD+] Torrentio 720p - Filme"),
+        stream("[RD+] Torrentio 1080p - Filme"),
+        stream("[RD+] Torrentio 1080p - Filme DUAL Dublado"),
+        stream("Addon sem tags"),
+    };
+    AddonClient::rankStreams(streams);
+    CHECK(streams[0].title == "[RD+] Torrentio 1080p - Filme DUAL Dublado");  // cached + Portuguese + 1080p
+    CHECK(streams[1].title == "[RD+] Torrentio 1080p - Filme");
+    CHECK(streams[2].title == "[RD+] Torrentio 720p - Filme");
+    CHECK(streams[3].title == "[RD+] Torrentio 4k - Filme 2160p");
+    CHECK(streams[4].title == "Addon sem tags");                            // other addons: neutral
+    CHECK(streams[5].title == "[RD download] Torrentio 1080p - Filme DUAL");  // uncached last
+}
+
 int main() {
+    testCleanLabel();
+    testRank();
     testUrls();
     testStreams();
     testInvalid();

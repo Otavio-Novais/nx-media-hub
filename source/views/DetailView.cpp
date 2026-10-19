@@ -5,6 +5,7 @@
 #include "api/AddonClient.hpp"
 #include "api/TmdbClient.hpp"
 #include "core/Config.hpp"
+#include "core/Library.hpp"
 #include "views/SourcePicker.hpp"
 
 using namespace brls::literals;
@@ -33,6 +34,13 @@ DetailView::DetailView(MediaItem mediaItem) : item(std::move(mediaItem)) {
     playButton->setVisibility(item.type == MediaType::Movie ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
     playButton->registerClickAction([this](brls::View*) {
         play();
+        return true;
+    });
+    this->registerAction("detail/favorite"_i18n, brls::BUTTON_X, [this](brls::View*) {
+        // Prefer the loaded details (full metadata) over the list entry
+        const MediaItem& target = details.item.tmdbId != 0 ? details.item : item;
+        bool added              = Favorites::instance().toggle(target);
+        brls::Application::notify(added ? "detail/favorite_added"_i18n : "detail/favorite_removed"_i18n);
         return true;
     });
 
@@ -143,17 +151,18 @@ void DetailView::play(int season, int episode) {
 
     MediaType type     = item.type;
     std::string imdbId = details.imdbId;
+    PlaybackContext context{details.item, season, episode};
     ASYNC_RETAIN
-    runInBackground([ASYNC_TOKEN, addons, type, imdbId, season, episode, playerTitle] {
+    runInBackground([ASYNC_TOKEN, addons, type, imdbId, season, episode, playerTitle, context] {
         std::string errors;
         auto streams = AddonClient::fetchStreams(addons, type, imdbId, season, episode, errors);
-        brls::sync([ASYNC_TOKEN, streams, errors, playerTitle] {
+        brls::sync([ASYNC_TOKEN, streams, errors, playerTitle, context] {
             ASYNC_RELEASE
             if (streams.empty()) {
                 brls::Application::notify(errors.empty() ? "sources/none"_i18n : "sources/addon_error"_i18n);
                 return;
             }
-            SourcePicker::show(streams, playerTitle);
+            SourcePicker::show(streams, playerTitle, context);
         });
     });
 }

@@ -1,6 +1,8 @@
-<brls:Box width="auto" height="auto" axis="column" padding="40">
-    <!-- Temporary Phase 1 test screen -->
-    <brls:Header title="@i18n/main/test_player" />
-    <brls:DetailCell id="test_bbb" title="@i18n/main/test_bbb" />
-    <brls:DetailCell id="test_apple" title="@i18n/main/test_apple" />
+<brls:Box width="auto" height="auto" axis="column">
+    <brls:Label id="empty" width="auto" height="auto" margin="40" text="@i18n/home/empty" />
+
+    <brls:ScrollingFrame width="auto" height="auto" grow="1" scrollingBehavior="centered">
+        <brls:Box id="sections" width="auto" height="auto" axis="column"
+            paddingLeft="30" paddingRight="10" paddingTop="20" paddingBottom="30" />
+    </brls:ScrollingFrame>
 </brls:Box>

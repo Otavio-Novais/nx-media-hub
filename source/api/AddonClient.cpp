@@ -18,13 +18,14 @@ std::vector<StreamSource> fetchStreams(const std::vector<std::string>& addons, M
             std::string error = !response.error.empty() ? response.error
                                 : !response.ok()        ? "HTTP " + std::to_string(response.status)
                                                         : "resposta inválida";
-            brls::Logger::warning("addon {}: {}", base, error);
-            errors += base + ": " + error + "\n";
+            brls::Logger::warning("addon {}: {}", HttpClient::redact(base), error);
+            errors += HttpClient::redact(base) + ": " + error + "\n";
             continue;
         }
-        brls::Logger::info("addon {}: {} streams for {}", base, streams.size(), path);
+        brls::Logger::info("addon {}: {} streams for {}", HttpClient::redact(base), streams.size(), path);
         std::move(streams.begin(), streams.end(), std::back_inserter(all));
     }
+    rankStreams(all);
     return all;
 }
 

@@ -10,6 +10,7 @@
 #include "views/HomeTab.hpp"
 #include "views/LiveTvTab.hpp"
 #include "views/MainActivity.hpp"
+#include "views/SettingsTab.hpp"
 #include "views/RemoteImage.hpp"
 
 using namespace brls::literals;
@@ -52,6 +53,7 @@ int main(int argc, char* argv[]) {
     brls::Application::registerXMLView("HomeTab", HomeTab::create);
     brls::Application::registerXMLView("CatalogTab", CatalogTab::create);
     brls::Application::registerXMLView("LiveTvTab", LiveTvTab::create);
+    brls::Application::registerXMLView("SettingsTab", SettingsTab::create);
 
     brls::Application::pushActivity(new MainActivity());
     if (!playUrl.empty()) brls::Application::pushActivity(new PlayerActivity({.title = playUrl, .url = playUrl}));

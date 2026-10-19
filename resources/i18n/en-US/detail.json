@@ -4,5 +4,8 @@
   "no_overview": "No synopsis available.",
   "no_episodes": "No episodes found.",
   "error": "Loading error",
-  "sources_soon": "Source selection arrives in phase 4 (addons)"
+  "sources_soon": "Source selection arrives in phase 4 (addons)",
+  "favorite": "Favorite",
+  "favorite_added": "Added to favorites",
+  "favorite_removed": "Removed from favorites"
 }

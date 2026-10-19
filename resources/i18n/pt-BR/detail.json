@@ -4,5 +4,8 @@
   "no_overview": "Sinopse indisponível.",
   "no_episodes": "Nenhum episódio encontrado.",
   "error": "Erro ao carregar",
-  "sources_soon": "Seleção de fontes chega na Fase 4 (addons)"
+  "sources_soon": "Seleção de fontes chega na Fase 4 (addons)",
+  "favorite": "Favorito",
+  "favorite_added": "Adicionado aos favoritos",
+  "favorite_removed": "Removido dos favoritos"
 }

@@ -3,22 +3,7 @@
 #include <borealis.hpp>
 
 #include "models/MediaItem.hpp"
-#include "views/RemoteImage.hpp"
-
-// Focusable poster + title; opens the details screen on click. The poster loads on demand.
-class PosterCard : public brls::Box {
-public:
-    explicit PosterCard(const MediaItem& item);
-
-    void loadPoster();
-
-private:
-    BRLS_BIND(RemoteImage, poster, "poster");
-    BRLS_BIND(brls::Label, title, "title");
-    BRLS_BIND(brls::Label, subtitle, "subtitle");
-
-    std::string posterUrl;
-};
+#include "views/PosterCard.hpp"
 
 // Movies and series from TMDB: trending by default, Y opens the search keyboard.
 // Pages are appended while scrolling; posters load only around the focused row.

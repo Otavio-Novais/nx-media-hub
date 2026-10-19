@@ -19,6 +19,12 @@ public:
     std::vector<std::string> addons;   // Stremio addon base URLs
     std::vector<std::string> m3uUrls;  // M3U list URLs or local paths
 
+    // Settings screen: update a field and write config.json (a value typed by the user replaces the .env default)
+    void setTmdbApiKey(const std::string& key);
+    void setAddons(const std::vector<std::string>& list);
+    void setM3uUrls(const std::vector<std::string>& list);
+    bool isTmdbKeyDefault() const { return tmdbKeyIsDefault; }
+
 private:
     Config() = default;
     void loadFile();

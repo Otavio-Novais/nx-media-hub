@@ -1,0 +1,9 @@
+<brls:Box width="auto" height="auto" axis="column">
+    <brls:ScrollingFrame width="auto" height="auto" grow="1">
+        <brls:Box width="auto" height="auto" axis="column" paddingLeft="40" paddingRight="40" paddingTop="10" paddingBottom="30">
+            <!-- Holds the focus while the cells below are rebuilt -->
+            <brls:Label id="parking" width="auto" height="1" />
+            <brls:Box id="content" width="auto" height="auto" axis="column" />
+        </brls:Box>
+    </brls:ScrollingFrame>
+</brls:Box>

@@ -1,0 +1,7 @@
+<brls:Box width="200" height="auto" axis="column" focusable="true" marginRight="20" padding="6" cornerRadius="6">
+
+    <RemoteImage id="logo" width="188" height="106" scalingType="fit" cornerRadius="4" />
+
+    <brls:Label id="name" width="auto" height="auto" fontSize="16" singleLine="true" marginTop="8" />
+
+</brls:Box>

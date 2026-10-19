@@ -22,6 +22,14 @@ namespace HttpClient {
 
 void init() { curl_global_init(CURL_GLOBAL_DEFAULT); }
 
+std::string redact(const std::string& url) {
+    size_t scheme = url.find("://");
+    if (scheme == std::string::npos) return url.substr(0, url.find('/'));
+    size_t pathStart = url.find_first_of("/?#", scheme + 3);
+    if (pathStart == std::string::npos) return url;
+    return url.substr(0, pathStart) + "/…";
+}
+
 HttpResponse get(const std::string& url, const std::map<std::string, std::string>& headers, long timeoutSeconds) {
     std::lock_guard<std::mutex> lock(requestMutex);
     HttpResponse response;

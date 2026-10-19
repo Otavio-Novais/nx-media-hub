@@ -7,8 +7,5 @@
     "settings": "Configurações"
   },
   "placeholder": "Em construção",
-  "test_player": "Teste do player (Fase 1)",
-  "test_bbb": "Big Buck Bunny 1080p (H.264)",
-  "test_apple": "Apple BipBop (várias faixas de áudio e legendas)",
   "applet_warning": "O app foi aberto em modo applet (álbum) e tem pouca memória. Para reproduzir vídeos, abra o Homebrew Menu segurando R ao iniciar um jogo."
 }
