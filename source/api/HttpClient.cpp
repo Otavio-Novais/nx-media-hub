@@ -3,13 +3,38 @@
 #include <curl/curl.h>
 
 #include <algorithm>
+#include <condition_variable>
 #include <mutex>
 
 namespace {
 
 // One request at a time: concurrent TLS handshakes from several threads are the suspected cause of
-// intermittent native crashes on the Switch (curl's mbedtls backend may lack thread support there)
-std::mutex requestMutex;
+// intermittent native crashes on the Switch (curl's mbedtls backend may lack thread support there).
+// A plain mutex is not fair: the image worker re-locked it right away and lists waited behind dozens of
+// images, so Normal requests go first.
+std::mutex turnMutex;
+std::condition_variable turnChanged;
+bool busy          = false;
+int normalsWaiting = 0;
+
+class Turn {
+public:
+    explicit Turn(HttpClient::Priority priority) {
+        std::unique_lock<std::mutex> lock(turnMutex);
+        bool normal = priority == HttpClient::Priority::Normal;
+        if (normal) normalsWaiting++;
+        turnChanged.wait(lock, [normal] { return !busy && (normal || normalsWaiting == 0); });
+        if (normal) normalsWaiting--;
+        busy = true;
+    }
+    ~Turn() {
+        {
+            std::lock_guard<std::mutex> lock(turnMutex);
+            busy = false;
+        }
+        turnChanged.notify_all();
+    }
+};
 
 size_t writeBody(char* data, size_t size, size_t count, void* userdata) {
     static_cast<std::string*>(userdata)->append(data, size * count);
@@ -30,8 +55,9 @@ std::string redact(const std::string& url) {
     return url.substr(0, pathStart) + "/…";
 }
 
-HttpResponse get(const std::string& url, const std::map<std::string, std::string>& headers, long timeoutSeconds) {
-    std::lock_guard<std::mutex> lock(requestMutex);
+HttpResponse get(const std::string& url, const std::map<std::string, std::string>& headers, long timeoutSeconds,
+                 Priority priority) {
+    Turn turn(priority);
     HttpResponse response;
     CURL* curl = curl_easy_init();
     if (!curl) {

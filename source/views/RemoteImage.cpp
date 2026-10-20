@@ -60,7 +60,7 @@ void workerLoop() {
             url = queue.front();
             queue.pop_front();
         }
-        HttpResponse response = HttpClient::get(url, {}, IMAGE_TIMEOUT);
+        HttpResponse response = HttpClient::get(url, {}, IMAGE_TIMEOUT, HttpClient::Priority::Background);
         brls::sync([url, response] { finishDownload(url, response); });
     }
 }

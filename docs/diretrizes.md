@@ -156,7 +156,7 @@ docker run --rm -v "$(pwd):/project" -w /project devkitpro/devkita64:latest bash
 
 ## 9. Pendências Conhecidas
 - **Ordem de download das imagens:** a fila é LIFO (pedido mais recente primeiro, bom ao trocar de aba), mas na carga inicial inverte a ordem dentro de cada linha. Ideal: prioridade por linha visível, em ordem.
-- **Prioridade de requisições:** o `HttpClient` serializa todas as requisições (mutex); listas/detalhes podem esperar atrás de imagens (observado 17 s para a lista M3U ou a 1ª página do catálogo). Dar prioridade a listas/detalhes sobre imagens.
+- **Prioridade de requisições (resolvido na 0.5.2):** o `HttpClient` continua com uma requisição por vez, mas as imagens (`Priority::Background`) só começam quando nenhuma lista/detalhe está esperando. Antes, a lista M3U chegou a esperar 17 s atrás das imagens.
 - **Crash nativo intermitente:** fechamentos sem log ocorreram com requisições HTTPS concorrentes; a serialização no `HttpClient` é a mitigação atual (hipótese: mbedtls do curl sem suporte a threads no Switch). Também ocorreu um fechamento ao abrir/fechar uma série repetidamente (antes da serialização) — revalidar.
 - **`std::thread` não funciona no Switch** (devkitA64 lança "Function not implemented"): usar `runInBackground` (pthread) em `core/Background.hpp`.
 - **TLS sem verificação de certificado no Switch** (sem CA store acessível, mesmo padrão do wiliwili).

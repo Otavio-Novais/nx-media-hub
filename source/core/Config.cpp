@@ -10,11 +10,10 @@
 
 namespace {
 
-// Public lists of free channels (https://github.com/iptv-org/iptv): Portuguese-language, sports and news
+// iptv-org's Portuguese-language, sports and news lists merged, without the channels that are down
+// (https://github.com/Otavio-Novais/nx-media-hub-lists, rechecked every 6 hours)
 const std::vector<std::string> DEFAULT_M3U = {
-    "https://iptv-org.github.io/iptv/languages/por.m3u",
-    "https://iptv-org.github.io/iptv/categories/sports.m3u",
-    "https://iptv-org.github.io/iptv/categories/news.m3u",
+    "https://raw.githubusercontent.com/Otavio-Novais/nx-media-hub-lists/main/lista_limpa.m3u",
 };
 
 #ifndef DEFAULT_TMDB_API_KEY

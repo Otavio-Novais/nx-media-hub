@@ -9,7 +9,7 @@ Homebrew `.nro` de uso pessoal para Nintendo Switch (Atmosphère) que junta, num
 - **Player:** libmpv com decodificação por hardware do Tegra (`nvtegra-copy`), troca de áudio/legenda e legendas externas; retoma de onde parou.
 - **Configurações:** chave do TMDB, addons e listas M3U editáveis no próprio Switch.
 
-Versão atual: **0.5.1**. O `.nro` dos [releases](https://github.com/Otavio-Novais/nx-media-hub/releases) traz só a
+Versão atual: **0.5.2**. O `.nro` dos [releases](https://github.com/Otavio-Novais/nx-media-hub/releases) traz só a
 **TV ao Vivo** (Filmes e Séries ainda em desenvolvimento, veja [Build](#build)): copie para `sdmc:/switch/` e abra pelo
 Homebrew Menu.
 
@@ -51,11 +51,7 @@ Na primeira execução o app cria `sdmc:/switch/nx-media-hub/config.json` (no de
 {
   "tmdbApiKey": "",
   "addons": [],
-  "m3uUrls": [
-    "https://iptv-org.github.io/iptv/languages/por.m3u",
-    "https://iptv-org.github.io/iptv/categories/sports.m3u",
-    "https://iptv-org.github.io/iptv/categories/news.m3u"
-  ],
+  "m3uUrls": ["https://raw.githubusercontent.com/Otavio-Novais/nx-media-hub-lists/main/lista_limpa.m3u"],
   "countries": []
 }
 ```
@@ -64,7 +60,7 @@ Na primeira execução o app cria `sdmc:/switch/nx-media-hub/config.json` (no de
 | :--- | :--- |
 | `tmdbApiKey` | Chave da API do TMDB (v3), gratuita em themoviedb.org → Configurações → API. Necessária para o catálogo. |
 | `addons` | Lista de addons do Stremio (veja abaixo). |
-| `m3uUrls` | Listas de canais: URLs ou arquivos no SD (ex.: `sdmc:/switch/nx-media-hub/lista.m3u`). Padrão: canais em português, esportes e notícias do [iptv-org](https://github.com/iptv-org/iptv). |
+| `m3uUrls` | Listas de canais: URLs ou arquivos no SD (ex.: `sdmc:/switch/nx-media-hub/lista.m3u`). Padrão: a [lista limpa](https://github.com/Otavio-Novais/nx-media-hub-lists), com os canais em português, esportes e notícias do [iptv-org](https://github.com/iptv-org/iptv), sem repetidos e sem os fora do ar (verificada a cada 6 horas pelo GitHub Actions). |
 | `countries` | Opcional. Mostra só canais desses países, pelo `tvg-id` das listas do iptv-org (`Canal.<país>@<versão>`), e esconde versões regionais de outros países (`@DK`, `@Poland`…). Ex.: `["br","pt","us","uk","ca"]` (o iptv-org usa `uk` para o Reino Unido). Vazio = todos. |
 
 ### Pela aba Configurações
