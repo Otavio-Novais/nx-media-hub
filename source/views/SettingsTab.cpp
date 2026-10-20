@@ -8,10 +8,12 @@ namespace {
 
 const int URL_MAX_LENGTH = 512;
 
+#ifdef ENABLE_MOVIES
 std::string maskKey(const std::string& key) {
     if (key.size() <= 4) return std::string(key.size(), '*');
     return std::string(8, '*') + key.substr(key.size() - 4);
 }
+#endif
 
 }  // namespace
 
@@ -44,6 +46,7 @@ void SettingsTab::rebuild() {
 
     Config& config = Config::instance();
 
+#ifdef ENABLE_MOVIES
     addHeader("settings/tmdb"_i18n);
     std::string keyDetail = config.tmdbApiKey.empty()   ? "settings/not_set"_i18n
                             : config.isTmdbKeyDefault() ? "settings/from_build"_i18n
@@ -63,6 +66,7 @@ void SettingsTab::rebuild() {
     addHeader("settings/addons"_i18n);
     addUrlList(config.addons, "settings/add_addon"_i18n, "settings/addon_url"_i18n,
                [](std::vector<std::string> list) { Config::instance().setAddons(list); });
+#endif
 
     addHeader("settings/lists"_i18n);
     addUrlList(config.m3uUrls, "settings/add_list"_i18n, "settings/list_url"_i18n,

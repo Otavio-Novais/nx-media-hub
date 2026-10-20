@@ -4,7 +4,7 @@
 
 class MainActivity : public brls::Activity {
 public:
-    CONTENT_FROM_XML_RES("activity/main.xml");
+    brls::View* createContentView() override;
 
     void onContentAvailable() override;
     // Back from the player/details/settings dialogs: refresh what depends on history and favorites

@@ -4,5 +4,6 @@
   "channels": "Favorite channels",
   "remaining": "{} left",
   "remove": "Remove",
-  "empty": "Nothing here yet. What you watch shows up in \"Continue watching\"; favorite titles with X in the details and channels with Y in Live TV."
+  "empty": "Nothing here yet. What you watch shows up in \"Continue watching\"; favorite titles with X in the details and channels with Y in Live TV.",
+  "empty_live": "Nothing here yet. Favorite channels with Y in Live TV to see them here."
 }

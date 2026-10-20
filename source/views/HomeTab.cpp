@@ -13,6 +13,7 @@ namespace {
 
 HomeTab* activeHome = nullptr;
 
+#ifdef ENABLE_MOVIES
 std::string remaining(const WatchEntry& entry) {
     int minutes = (int)((entry.duration - entry.position) / 60);
     std::string left = minutes >= 60 ? fmt::format("{}h {:02}min", minutes / 60, minutes % 60) : fmt::format("{} min", minutes);
@@ -20,6 +21,7 @@ std::string remaining(const WatchEntry& entry) {
     if (entry.item.type == MediaType::Series) text = fmt::format("T{}E{} · {}", entry.season, entry.episode, text);
     return text;
 }
+#endif
 
 // Channel logo + name; plays the channel on click
 class ChannelCard : public brls::Box {
@@ -80,6 +82,7 @@ void HomeTab::rebuild() {
     sections->clearViews();
 
     std::vector<brls::View*> continueCards, favoriteCards, channelCards;
+#ifdef ENABLE_MOVIES
     for (const auto& entry : History::instance().entries()) {
         auto* card = new PosterCard(entry.item, remaining(entry));
         std::string key = entry.key();
@@ -101,6 +104,7 @@ void HomeTab::rebuild() {
         card->loadPoster();
         favoriteCards.push_back(card);
     }
+#endif
     for (const auto& channel : Favorites::instance().channels()) channelCards.push_back(new ChannelCard(channel));
 
     addSection("home/continue"_i18n, continueCards);
@@ -108,6 +112,9 @@ void HomeTab::rebuild() {
     addSection("home/channels"_i18n, channelCards);
 
     bool nothing = continueCards.empty() && favoriteCards.empty() && channelCards.empty();
+#ifndef ENABLE_MOVIES
+    empty->setText("home/empty_live"_i18n);
+#endif
     empty->setVisibility(nothing ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
 
     if (brls::Application::getCurrentFocus() == empty && !nothing) {

@@ -10,8 +10,12 @@
 
 namespace {
 
-// Public list of free Brazilian channels (https://github.com/iptv-org/iptv)
-const char* DEFAULT_M3U = "https://iptv-org.github.io/iptv/countries/br.m3u";
+// Public lists of free channels (https://github.com/iptv-org/iptv): Portuguese-language, sports and news
+const std::vector<std::string> DEFAULT_M3U = {
+    "https://iptv-org.github.io/iptv/languages/por.m3u",
+    "https://iptv-org.github.io/iptv/categories/sports.m3u",
+    "https://iptv-org.github.io/iptv/categories/news.m3u",
+};
 
 #ifndef DEFAULT_TMDB_API_KEY
 #define DEFAULT_TMDB_API_KEY ""
@@ -70,7 +74,7 @@ void Config::loadFile() {
     std::ifstream file(configPath());
     if (!file) {
         brls::Logger::info("config: {} not found, creating defaults", configPath());
-        m3uUrls = {DEFAULT_M3U};
+        m3uUrls = DEFAULT_M3U;
         save();
         return;
     }
@@ -79,7 +83,7 @@ void Config::loadFile() {
     if (json.is_discarded() || !json.is_object()) {
         // Keep the user's file as is: overwriting it would lose their settings
         brls::Logger::error("config: {} is not valid JSON, using defaults without saving", configPath());
-        m3uUrls = {DEFAULT_M3U};
+        m3uUrls = DEFAULT_M3U;
         return;
     }
     try {
@@ -90,7 +94,7 @@ void Config::loadFile() {
     } catch (const nlohmann::json::exception& e) {
         // Wrong field types (ex: "m3uUrls": "url" instead of a list)
         brls::Logger::error("config: invalid field in {}: {}", configPath(), e.what());
-        m3uUrls = {DEFAULT_M3U};
+        m3uUrls = DEFAULT_M3U;
     }
 }
 

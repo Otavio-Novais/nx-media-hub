@@ -1,6 +1,7 @@
 #!/bin/bash
 # Builds nx-media-hub.nro inside the devkitPro container:
-#   docker run --rm -v "$(pwd):/data" devkitpro/devkita64:20251117 bash /data/scripts/build_switch.sh
+#   docker run --rm -v "$(pwd):/data" devkitpro/devkita64:20251117 bash /data/scripts/build_switch.sh [cmake options]
+# Release (movies hidden): ... build_switch.sh -DENABLE_MOVIES=OFF
 set -e
 
 BUILD_DIR=cmake-build-switch
@@ -20,7 +21,7 @@ for PKG in "${PKGS[@]}"; do
     dkp-pacman -U --noconfirm --needed ".pkg-cache/${PKG}"
 done
 
-cmake -B ${BUILD_DIR} -DPLATFORM_SWITCH=ON -DCMAKE_BUILD_TYPE=Release
+cmake -B ${BUILD_DIR} -DPLATFORM_SWITCH=ON -DCMAKE_BUILD_TYPE=Release "$@"
 make -C ${BUILD_DIR} nx-media-hub.nro -j"$(nproc)"
 
 # the container runs as root: hand the outputs back to the repo owner

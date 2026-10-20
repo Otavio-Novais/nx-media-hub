@@ -4,5 +4,6 @@
   "channels": "Canais favoritos",
   "remaining": "faltam {}",
   "remove": "Remover",
-  "empty": "Nada por aqui ainda. O que você assistir aparece em \"Continuar assistindo\"; favorite títulos com X nos detalhes e canais com Y na TV ao Vivo."
+  "empty": "Nada por aqui ainda. O que você assistir aparece em \"Continuar assistindo\"; favorite títulos com X nos detalhes e canais com Y na TV ao Vivo.",
+  "empty_live": "Nada por aqui ainda. Favorite canais com Y na TV ao Vivo para tê-los aqui."
 }
