@@ -20,9 +20,11 @@ namespace {
 const std::string ALL_KEY    = "\x01all";
 const std::string OTHERS_KEY = "\x01others";
 
-// Session cache: the tab is recreated on every tab switch, the lists only reload on demand (X).
+// Session cache: the tab is recreated on every tab switch, the lists only reload on demand (X)
+// or when Settings changed them (cachedVersion != Config::m3uVersion()).
 // A load in progress is shared: its result goes to whichever tab instance is alive when it finishes.
 std::vector<Channel> cachedChannels;
+int cachedVersion          = -1;
 std::string cachedCategory = ALL_KEY;
 bool listsLoading          = false;
 LiveTvTab* activeTab       = nullptr;
@@ -47,6 +49,11 @@ bool readSource(const std::string& source, std::string& content, std::string& er
     buffer << file.rdbuf();
     content = buffer.str();
     return true;
+}
+
+// How a source shows up in error messages: host only for URLs (they may carry credentials), full path for files
+std::string sourceLabel(const std::string& source) {
+    return source.find("://") != std::string::npos ? HttpClient::redact(source) : source;
 }
 
 class ChannelDataSource : public brls::RecyclerDataSource {
@@ -100,7 +107,7 @@ LiveTvTab::LiveTvTab() {
     });
 
     activeTab = this;
-    if (!cachedChannels.empty()) showChannels(cachedChannels, "");
+    if (!cachedChannels.empty() && cachedVersion == Config::instance().m3uVersion()) showChannels(cachedChannels, "");
     else loadLists();
 }
 
@@ -132,14 +139,15 @@ void LiveTvTab::loadLists() {
 
     // Own thread: the shared brls::async queue is busy with image downloads
     std::vector<std::string> countries = Config::instance().countries;
-    runInBackground([sources, countries] {
+    int version                        = Config::instance().m3uVersion();
+    runInBackground([sources, countries, version] {
         std::vector<Channel> loaded;
         std::string errors;
         for (const auto& source : sources) {
             std::string content, error;
             if (!readSource(source, content, error)) {
                 brls::Logger::error("live: cannot load {}: {}", source, error);
-                errors += source + ": " + error + "\n";
+                errors += sourceLabel(source) + ": " + error + "\n";
                 continue;
             }
             auto parsed = M3uParser::parse(content);
@@ -153,10 +161,21 @@ void LiveTvTab::loadLists() {
         loaded        = M3uParser::filterByCountry(std::move(loaded), countries);
         if (loaded.size() < unique)
             brls::Logger::info("live: {} channels from other countries hidden ({} left)", unique - loaded.size(), loaded.size());
-        brls::sync([loaded = std::move(loaded), errors]() mutable {
+        brls::sync([loaded = std::move(loaded), errors, version]() mutable {
             listsLoading   = false;
             cachedChannels = loaded;
+            cachedVersion  = version;
             cachedCategory = ALL_KEY;
+            // Settings changed the lists while these were loading: load the new ones instead
+            if (version != Config::instance().m3uVersion()) {
+                if (activeTab) activeTab->loadLists();
+                return;
+            }
+            // Some lists failed but others loaded: the channels hide the error, so say it here
+            if (!loaded.empty() && !errors.empty()) {
+                errors.pop_back();  // trailing newline
+                brls::Application::notify("live/partial_error"_i18n + "\n" + errors);
+            }
             if (activeTab) activeTab->showChannels(std::move(loaded), errors);
         });
     });

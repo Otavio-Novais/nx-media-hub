@@ -66,7 +66,8 @@ Na primeira execução o app cria `sdmc:/switch/nx-media-hub/config.json` (no de
 ### Pela aba Configurações
 
 A chave do TMDB, os addons e as listas M3U podem ser editados no próprio Switch (teclado na tela; **A** num item abre a opção de
-apagar). As mudanças são gravadas no `config.json` na hora. Listas M3U novas valem ao recarregar a TV ao Vivo (**X**).
+apagar). As mudanças são gravadas no `config.json` na hora. A TV ao Vivo recarrega sozinha quando as
+listas mudam e avisa quando alguma delas não carrega.
 O filtro `countries` só é editado pelo arquivo.
 
 ### Pelo arquivo

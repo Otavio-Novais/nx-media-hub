@@ -27,6 +27,8 @@ public:
     void setAddons(const std::vector<std::string>& list);
     void setM3uUrls(const std::vector<std::string>& list);
     bool isTmdbKeyDefault() const { return tmdbKeyIsDefault; }
+    // Bumped by setM3uUrls: Live TV compares it with the version its channels were loaded from
+    int m3uVersion() const { return m3uUrlsVersion; }
 
 private:
     Config() = default;
@@ -34,4 +36,5 @@ private:
 
     bool tmdbKeyIsDefault = false;  // key came from the build (.env), not from config.json
     bool addonsAreDefault = false;  // same for the addon list
+    int m3uUrlsVersion    = 0;
 };

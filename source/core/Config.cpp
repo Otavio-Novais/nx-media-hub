@@ -120,5 +120,6 @@ void Config::setAddons(const std::vector<std::string>& list) {
 
 void Config::setM3uUrls(const std::vector<std::string>& list) {
     m3uUrls = list;
+    m3uUrlsVersion++;
     save();
 }
