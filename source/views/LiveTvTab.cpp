@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <fstream>
 #include <set>
-#include <sstream>
+#include <string_view>
 #include "core/Background.hpp"
 
 #include "api/HttpClient.hpp"
@@ -23,21 +23,28 @@ const std::string OTHERS_KEY = "\x01others";
 // Session cache: the tab is recreated on every tab switch, the lists only reload on demand (X)
 // or when Settings changed them (cachedVersion != Config::m3uVersion()).
 // A load in progress is shared: its result goes to whichever tab instance is alive when it finishes.
-std::vector<Channel> cachedChannels;
+ChannelList cachedChannels;
 int cachedVersion          = -1;
 std::string cachedCategory = ALL_KEY;
 bool listsLoading          = false;
 LiveTvTab* activeTab       = nullptr;
 
-// Reads an M3U source: http(s) URL or local file (ex: sdmc:/switch/nx-media-hub/lista.m3u)
-bool readSource(const std::string& source, std::string& content, std::string& error) {
+// All lists together: measured ~650 bytes per channel, so ~35 MB at most, far from the Switch's memory limit
+// (iptv-org's list of every country has ~10k channels). Past it the rest of the list is ignored.
+const size_t MAX_CHANNELS = 50000;
+
+// Reads an M3U source into the parser while it downloads (the whole file is never in memory):
+// http(s) URL or local file (ex: sdmc:/switch/nx-media-hub/lista.m3u). Stops once the parser is full.
+bool readSource(const std::string& source, M3uParser::Parser& parser, std::string& error) {
     if (source.find("://") != std::string::npos) {
-        HttpResponse response = HttpClient::get(source);
+        HttpResponse response = HttpClient::getStream(source, [&parser](std::string_view chunk) {
+            parser.feed(chunk);
+            return !parser.full();
+        });
         if (!response.ok()) {
             error = response.error.empty() ? "HTTP " + std::to_string(response.status) : response.error;
             return false;
         }
-        content = std::move(response.body);
         return true;
     }
     std::ifstream file(source, std::ios::binary);
@@ -45,9 +52,11 @@ bool readSource(const std::string& source, std::string& content, std::string& er
         error = "arquivo não encontrado";
         return false;
     }
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    content = buffer.str();
+    std::vector<char> buffer(64 * 1024);
+    while (file && !parser.full()) {
+        file.read(buffer.data(), (std::streamsize)buffer.size());  // the last read is short and ends the loop
+        parser.feed(std::string_view(buffer.data(), (size_t)file.gcount()));
+    }
     return true;
 }
 
@@ -107,7 +116,7 @@ LiveTvTab::LiveTvTab() {
     });
 
     activeTab = this;
-    if (!cachedChannels.empty() && cachedVersion == Config::instance().m3uVersion()) showChannels(cachedChannels, "");
+    if (cachedChannels && !cachedChannels->empty() && cachedVersion == Config::instance().m3uVersion()) showChannels(cachedChannels, "");
     else loadLists();
 }
 
@@ -142,16 +151,24 @@ void LiveTvTab::loadLists() {
     int version                        = Config::instance().m3uVersion();
     runInBackground([sources, countries, version] {
         std::vector<Channel> loaded;
-        std::string errors;
+        std::string errors, truncated;
         for (const auto& source : sources) {
-            std::string content, error;
-            if (!readSource(source, content, error)) {
-                brls::Logger::error("live: cannot load {}: {}", source, error);
+            if (loaded.size() >= MAX_CHANNELS) {
+                truncated += sourceLabel(source) + "\n";
+                continue;
+            }
+            M3uParser::Parser parser(MAX_CHANNELS - loaded.size());
+            std::string error;
+            if (!readSource(source, parser, error)) {
+                brls::Logger::error("live: cannot load {}: {}", sourceLabel(source), error);
                 errors += sourceLabel(source) + ": " + error + "\n";
                 continue;
             }
-            auto parsed = M3uParser::parse(content);
-            brls::Logger::info("live: {} channels from {}", parsed.size(), source);
+            bool full   = parser.full();
+            auto parsed = parser.finish();
+            brls::Logger::info("live: {} channels from {}{}", parsed.size(), sourceLabel(source),
+                               full ? " (channel limit reached, rest ignored)" : "");
+            if (full) truncated += sourceLabel(source) + "\n";
             std::move(parsed.begin(), parsed.end(), std::back_inserter(loaded));
         }
         size_t total = loaded.size();
@@ -161,7 +178,8 @@ void LiveTvTab::loadLists() {
         loaded        = M3uParser::filterByCountry(std::move(loaded), countries);
         if (loaded.size() < unique)
             brls::Logger::info("live: {} channels from other countries hidden ({} left)", unique - loaded.size(), loaded.size());
-        brls::sync([loaded = std::move(loaded), errors, version]() mutable {
+        auto shared = std::make_shared<const std::vector<Channel>>(std::move(loaded));
+        brls::sync([loaded = std::move(shared), errors, truncated, version]() mutable {
             listsLoading   = false;
             cachedChannels = loaded;
             cachedVersion  = version;
@@ -172,18 +190,22 @@ void LiveTvTab::loadLists() {
                 return;
             }
             // Some lists failed but others loaded: the channels hide the error, so say it here
-            if (!loaded.empty() && !errors.empty()) {
+            if (!loaded->empty() && !errors.empty()) {
                 errors.pop_back();  // trailing newline
                 brls::Application::notify("live/partial_error"_i18n + "\n" + errors);
+            }
+            if (!truncated.empty()) {
+                truncated.pop_back();
+                brls::Application::notify(fmt::format(fmt::runtime("live/truncated"_i18n), MAX_CHANNELS) + "\n" + truncated);
             }
             if (activeTab) activeTab->showChannels(std::move(loaded), errors);
         });
     });
 }
 
-void LiveTvTab::showChannels(std::vector<Channel> loaded, const std::string& error) {
+void LiveTvTab::showChannels(ChannelList loaded, const std::string& error) {
     channels = std::move(loaded);
-    if (channels.empty()) {
+    if (channels->empty()) {
         status->setText(error.empty() ? "live/empty"_i18n : "live/error"_i18n + "\n" + error);
         return;
     }
@@ -193,7 +215,7 @@ void LiveTvTab::showChannels(std::vector<Channel> loaded, const std::string& err
     // Category list: All, playlist groups in alphabetical order, Others (channels without group)
     std::set<std::string> groups;
     bool hasUngrouped = false;
-    for (const auto& channel : channels) {
+    for (const auto& channel : *channels) {
         groups.insert(channel.groups.begin(), channel.groups.end());
         hasUngrouped |= channel.groups.empty();
     }
@@ -225,7 +247,7 @@ void LiveTvTab::showChannels(std::vector<Channel> loaded, const std::string& err
 
 void LiveTvTab::selectCategory(const std::string& category) {
     visible.clear();
-    for (const auto& channel : channels) {
+    for (const auto& channel : *channels) {
         bool match = category == ALL_KEY || (category == OTHERS_KEY && channel.groups.empty()) ||
                      std::find(channel.groups.begin(), channel.groups.end(), category) != channel.groups.end();
         if (match) visible.push_back(&channel);

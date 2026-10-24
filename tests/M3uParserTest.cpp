@@ -5,6 +5,8 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "api/M3uParser.hpp"
 
@@ -136,7 +138,57 @@ static void testFilterByCountry() {
     CHECK(M3uParser::filterByCountry({channel("A", "A.se@SD")}, {}).size() == 1);
 }
 
+static bool sameChannels(const std::vector<Channel>& a, const std::vector<Channel>& b) {
+    if (a.size() != b.size()) return false;
+    for (size_t i = 0; i < a.size(); i++) {
+        if (a[i].name != b[i].name || a[i].logo != b[i].logo || a[i].tvgId != b[i].tvgId ||
+            a[i].groups != b[i].groups || a[i].stream.url != b[i].stream.url ||
+            a[i].stream.userAgent != b[i].stream.userAgent || a[i].stream.referer != b[i].stream.referer ||
+            a[i].stream.headers != b[i].stream.headers)
+            return false;
+    }
+    return true;
+}
+
+static void testIncremental() {
+    // Any chunk size (lines, the BOM and CRLF cut anywhere) gives the same channels as the whole file
+    std::vector<std::pair<std::string, std::string>> playlists = {
+        {"basic.m3u", readFixture("basic.m3u")},
+        {"headers.m3u", readFixture("headers.m3u")},
+        {"BOM + CRLF", "\xEF\xBB\xBF#EXTM3U\r\n\r\n#EXTINF:-1,Canal CRLF\r\nhttp://a/b.m3u8\r\nhttp://orphan/c.m3u8"},
+    };
+    for (const auto& [fixture, content] : playlists) {
+        auto whole = M3uParser::parse(content);
+        CHECK(!whole.empty());
+        for (size_t size = 1; size <= content.size(); size++) {
+            M3uParser::Parser parser;
+            for (size_t pos = 0; pos < content.size(); pos += size)
+                parser.feed(std::string_view(content).substr(pos, size));
+            if (!sameChannels(parser.finish(), whole)) {
+                std::fprintf(stderr, "%s: chunks of %zu bytes differ\n", fixture.c_str(), size);
+                failures++;
+                break;
+            }
+        }
+    }
+
+    // Channel limit: stops at maxChannels and full() tells the caller to stop reading
+    M3uParser::Parser limited(2);
+    limited.feed(readFixture("basic.m3u"));
+    CHECK(limited.full());
+    auto two = limited.finish();
+    CHECK(two.size() == 2 && two[0].name == "Globo SP");
+
+    // A line longer than any playlist line is dropped, the next ones still parse
+    M3uParser::Parser parser;
+    parser.feed("#EXTM3U\n" + std::string(100 * 1024, 'x'));
+    parser.feed(std::string(100 * 1024, 'x') + "\n#EXTINF:-1,Canal\nhttps://example.com/a.m3u8");
+    auto after = parser.finish();
+    CHECK(after.size() == 1 && after[0].name == "Canal");
+}
+
 int main() {
+    testIncremental();
     testFilterByCountry();
     testDedupe();
     testBasicAttributes();
