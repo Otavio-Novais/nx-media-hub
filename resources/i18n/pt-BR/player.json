@@ -6,6 +6,8 @@
   "loading": "Carregando...",
   "live": "● AO VIVO",
   "error": "Erro ao reproduzir",
+  "reconnecting": "Reconectando... ({}/{})",
+  "connection_lost": "Conexão perdida. Aperte A para tentar de novo.",
   "no_tracks": "Nenhuma faixa disponível",
   "hints": " Pausar    ±10s    Áudio    Legendas    Voltar",
   "hints_paused": " Continuar    ±10s    Áudio    Legendas    Voltar",

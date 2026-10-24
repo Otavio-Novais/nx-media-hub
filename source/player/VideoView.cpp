@@ -13,6 +13,17 @@ namespace {
 const brls::Time OSD_DURATION  = 3 * 1000 * 1000;   // usec
 const brls::Time SAVE_INTERVAL = 30 * 1000 * 1000;  // usec
 
+// Live reconnection: a stream counts as stuck when its position has not moved for STALL_TIMEOUT (buffering
+// that never ends, or a load that never starts) or when it ended (keep-open leaves the last frame up).
+// Like closing and opening the channel, but with growing waits so a server that is down is not hammered.
+const brls::Time STALL_TIMEOUT    = 15 * 1000 * 1000;
+const brls::Time STABLE_PLAYBACK  = 30 * 1000 * 1000;  // playing this long after a reload resets the attempts
+// Waits before each attempt; past the list the last one repeats (10 attempts take about 2 minutes)
+const brls::Time RETRY_DELAYS[]   = {1 * 1000 * 1000, 2 * 1000 * 1000, 4 * 1000 * 1000, 8 * 1000 * 1000,
+                                     15 * 1000 * 1000};
+const int RETRY_STEPS             = sizeof(RETRY_DELAYS) / sizeof(RETRY_DELAYS[0]);
+const int MAX_ATTEMPTS            = 10;
+
 std::string formatTime(double seconds) {
     if (std::isnan(seconds) || seconds < 0) seconds = 0;
     int total = (int)seconds;
@@ -30,6 +41,11 @@ VideoView::VideoView(StreamSource src, std::function<void()> onSave)
 
     auto& mpv = MpvCore::instance();
     this->registerAction("player/pause"_i18n, brls::BUTTON_A, [this, &mpv](brls::View*) {
+        if (gaveUp) {  // "connection lost, press A": start over
+            attempts = 0;
+            reconnect();
+            return true;
+        }
         mpv.togglePause();
         showOsd();
         return true;
@@ -61,6 +77,7 @@ VideoView::VideoView(StreamSource src, std::function<void()> onSave)
             this->registerAction("+10s", button, seek(10), true, true);
     }
 
+    progressAt = brls::getCPUTimeUsec();
     showOsd();
 }
 
@@ -99,10 +116,56 @@ void VideoView::openTrackMenu(const std::string& type) {
     brls::Application::pushActivity(new brls::Activity(dropdown));
 }
 
+void VideoView::watchLive() {
+    auto& mpv      = MpvCore::instance();
+    brls::Time now = brls::getCPUTimeUsec();
+    if (gaveUp) return;
+    if (reconnectAt) {
+        if (now >= reconnectAt) reconnect();
+        return;
+    }
+
+    bool ended = !mpv.error.empty() || mpv.eofReached;
+    // A pause by the user is not a stall (keep-open also pauses at the end: that one is caught above)
+    if (mpv.position != lastPosition || (mpv.paused && !ended)) {
+        if (lastPosition >= 0 && mpv.position > lastPosition) played = true;
+        lastPosition = mpv.position;
+        progressAt   = now;
+    }
+    if (!played) return;
+    bool stalled = now - progressAt > STALL_TIMEOUT;
+    if (!ended && !stalled) {
+        if (attempts > 0 && !mpv.loading && now - reloadedAt > STABLE_PLAYBACK) attempts = 0;
+        return;
+    }
+
+    if (attempts >= MAX_ATTEMPTS) {
+        brls::Logger::error("player: live stream lost, giving up after {} reconnections", attempts);
+        gaveUp = true;
+        return;
+    }
+    brls::Time delay = RETRY_DELAYS[std::min(attempts, RETRY_STEPS - 1)];
+    brls::Logger::warning("player: live stream {}, reconnecting in {}s (attempt {}/{})",
+                          ended ? (mpv.error.empty() ? "ended" : "failed: " + mpv.error) : "stalled",
+                          delay / 1000000, attempts + 1, MAX_ATTEMPTS);
+    reconnectAt = now + delay;
+}
+
+void VideoView::reconnect() {
+    reconnectAt  = 0;
+    gaveUp       = false;
+    attempts++;
+    reloadedAt   = brls::getCPUTimeUsec();
+    progressAt   = reloadedAt;
+    lastPosition = -1;
+    MpvCore::instance().loadStream(source);
+}
+
 void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height, brls::Style style,
                      brls::FrameContext* ctx) {
     auto& mpv = MpvCore::instance();
     mpv.draw(brls::Rect(x, y, width, height), this->getAlpha());
+    if (source.isLive) watchLive();
     drawOsd(vg, x, y, width, height);
 
     brls::Time now = brls::getCPUTimeUsec();
@@ -119,7 +182,10 @@ void VideoView::drawOsd(NVGcontext* vg, float x, float y, float width, float hei
 
     // Status in the middle of the screen
     std::string status;
-    if (!mpv.error.empty()) status = "player/error"_i18n + ": " + mpv.error;
+    if (gaveUp) status = "player/connection_lost"_i18n;
+    else if (reconnectAt || (attempts > 0 && (mpv.loading || mpv.buffering)))
+        status = fmt::format(fmt::runtime("player/reconnecting"_i18n), attempts + (reconnectAt ? 1 : 0), MAX_ATTEMPTS);
+    else if (!mpv.error.empty()) status = "player/error"_i18n + ": " + mpv.error;
     else if (mpv.loading || mpv.buffering) status = "player/loading"_i18n;
     if (!status.empty()) {
         nvgFontSize(vg, 28);

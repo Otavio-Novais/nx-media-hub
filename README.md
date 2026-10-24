@@ -192,7 +192,7 @@ Dependências: `pkg-config libwayland-dev wayland-protocols libxkbcommon-dev lib
 ```bash
 cmake -B build-desktop -DPLATFORM_DESKTOP=ON -DCMAKE_BUILD_TYPE=Debug
 cmake --build build-desktop -j$(nproc)
-./build-desktop/nx-media-hub -d            # -p <url> abre o player direto
+./build-desktop/nx-media-hub -d            # -p <url> abre o player direto (-l <url>: como canal ao vivo)
 ctest --test-dir build-desktop               # testes (M3U, TMDB, addons, codificação de texto, histórico/favoritos)
 ```
 

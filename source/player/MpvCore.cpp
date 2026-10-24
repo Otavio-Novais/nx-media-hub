@@ -33,7 +33,7 @@ const char* FRAGMENT_SHADER =
     "    FragColor.a = Alpha;\n"
     "}\n";
 
-enum Observed : uint64_t { CORE_IDLE = 1, PAUSE, TIME_POS, DURATION, HWDEC, PAUSED_FOR_CACHE, CACHE_DURATION };
+enum Observed : uint64_t { CORE_IDLE = 1, PAUSE, TIME_POS, DURATION, HWDEC, PAUSED_FOR_CACHE, CACHE_DURATION, EOF_REACHED };
 
 GLuint compileShader(GLenum type, const char* source) {
     GLuint shader = glCreateShader(type);
@@ -136,6 +136,7 @@ MpvCore::MpvCore() {
     checkError(mpv_observe_property(mpv, HWDEC, "hwdec-current", MPV_FORMAT_STRING), "observe");
     checkError(mpv_observe_property(mpv, PAUSED_FOR_CACHE, "paused-for-cache", MPV_FORMAT_FLAG), "observe");
     checkError(mpv_observe_property(mpv, CACHE_DURATION, "demuxer-cache-duration", MPV_FORMAT_DOUBLE), "observe");
+    checkError(mpv_observe_property(mpv, EOF_REACHED, "eof-reached", MPV_FORMAT_FLAG), "observe");
 
     int advancedControl = 1;
     mpv_opengl_init_params glInit{getProcAddress, nullptr};
@@ -236,6 +237,7 @@ void MpvCore::clean() {
 
 void MpvCore::loadStream(const StreamSource& source, double startAt) {
     error.clear();
+    eofReached = false;
     position = duration = 0;
     fileLoaded          = false;
     readySubtitles.clear();
@@ -489,6 +491,10 @@ void MpvCore::handleEvents() {
                         break;
                     case CACHE_DURATION:
                         cached = *(double*)prop->data;
+                        break;
+                    case EOF_REACHED:
+                        eofReached = *(int*)prop->data;
+                        if (eofReached) brls::Logger::info("mpv: end of stream");
                         break;
                 }
                 break;

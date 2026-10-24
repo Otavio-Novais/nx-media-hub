@@ -28,11 +28,15 @@ int main(int argc, char* argv[]) {
         std::abort();
     });
 
-    // -d: debug logs; -p <url>: open the player directly (desktop testing)
+    // -d: debug logs; -p <url>: open the player directly, -l <url>: same as a live channel (desktop testing)
     std::string playUrl;
+    bool playLive = false;
     for (int i = 1; i < argc; i++) {
         if (std::strcmp(argv[i], "-d") == 0) brls::Logger::setLogLevel(brls::LogLevel::LOG_DEBUG);
-        else if (std::strcmp(argv[i], "-p") == 0 && i + 1 < argc) playUrl = argv[++i];
+        else if ((std::strcmp(argv[i], "-p") == 0 || std::strcmp(argv[i], "-l") == 0) && i + 1 < argc) {
+            playLive = argv[i][1] == 'l';
+            playUrl  = argv[++i];
+        }
     }
 
     brls::Platform::APP_LOCALE_DEFAULT = brls::LOCALE_PT_BR;
@@ -56,7 +60,7 @@ int main(int argc, char* argv[]) {
     brls::Application::registerXMLView("SettingsTab", SettingsTab::create);
 
     brls::Application::pushActivity(new MainActivity());
-    if (!playUrl.empty()) brls::Application::pushActivity(new PlayerActivity({.title = playUrl, .url = playUrl}));
+    if (!playUrl.empty()) brls::Application::pushActivity(new PlayerActivity({.title = playUrl, .url = playUrl, .isLive = playLive}));
 
     while (brls::Application::mainLoop())
         ;

@@ -6,6 +6,8 @@
   "loading": "Loading...",
   "live": "● LIVE",
   "error": "Playback error",
+  "reconnecting": "Reconnecting... ({}/{})",
+  "connection_lost": "Connection lost. Press A to try again.",
   "no_tracks": "No tracks available",
   "hints": " Pause    ±10s    Audio    Subtitles    Back",
   "hints_paused": " Resume    ±10s    Audio    Subtitles    Back",

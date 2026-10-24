@@ -44,6 +44,7 @@ public:
     bool paused       = false;
     bool loading      = false;
     bool buffering    = false;
+    bool eofReached   = false;  // keep-open: the stream ended and its last frame stays up (live: connection lost)
     double position   = 0;  // seconds
     double duration   = 0;  // seconds
     double cached     = 0;  // seconds of video buffered ahead
