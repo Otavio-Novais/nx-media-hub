@@ -28,14 +28,16 @@ int main(int argc, char* argv[]) {
         std::abort();
     });
 
-    // -d: debug logs; -p <url>: open the player directly, -l <url>: same as a live channel (desktop testing)
+    // -d: debug logs; -p <url>: open the player directly, -l <url>: same as a live channel, repeated for the
+    // versions of one channel, best first (desktop testing)
     std::string playUrl;
-    bool playLive = false;
+    std::vector<StreamSource> liveVersions;
     for (int i = 1; i < argc; i++) {
         if (std::strcmp(argv[i], "-d") == 0) brls::Logger::setLogLevel(brls::LogLevel::LOG_DEBUG);
-        else if ((std::strcmp(argv[i], "-p") == 0 || std::strcmp(argv[i], "-l") == 0) && i + 1 < argc) {
-            playLive = argv[i][1] == 'l';
-            playUrl  = argv[++i];
+        else if (std::strcmp(argv[i], "-p") == 0 && i + 1 < argc) playUrl = argv[++i];
+        else if (std::strcmp(argv[i], "-l") == 0 && i + 1 < argc) {
+            std::string url = argv[++i];
+            liveVersions.push_back({.title = url, .url = url, .isLive = true});
         }
     }
 
@@ -60,7 +62,8 @@ int main(int argc, char* argv[]) {
     brls::Application::registerXMLView("SettingsTab", SettingsTab::create);
 
     brls::Application::pushActivity(new MainActivity());
-    if (!playUrl.empty()) brls::Application::pushActivity(new PlayerActivity({.title = playUrl, .url = playUrl, .isLive = playLive}));
+    if (!playUrl.empty()) brls::Application::pushActivity(new PlayerActivity({.title = playUrl, .url = playUrl}));
+    else if (!liveVersions.empty()) brls::Application::pushActivity(new PlayerActivity(liveVersions));
 
     while (brls::Application::mainLoop())
         ;

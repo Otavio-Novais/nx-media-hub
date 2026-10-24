@@ -7,6 +7,7 @@
   "live": "● AO VIVO",
   "error": "Erro ao reproduzir",
   "reconnecting": "Reconectando... ({}/{})",
+  "trying_version": "Tentando outra versão do canal ({}/{})...",
   "connection_lost": "Conexão perdida. Aperte A para tentar de novo.",
   "no_tracks": "Nenhuma faixa disponível",
   "hints": " Pausar    ±10s    Áudio    Legendas    Voltar",

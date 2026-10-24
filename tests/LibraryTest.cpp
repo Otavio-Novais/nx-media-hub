@@ -56,9 +56,15 @@ static void testSerialization() {
     channel.stream.referer   = "https://ref/";
     channel.stream.headers   = {{"Origin", "https://o"}};
     channel.stream.isLive    = true;
+    channel.alternatives     = {{.title = "Canal SD", .url = "https://cdn/sd.m3u8", .isLive = true}};
     Channel c2               = nlohmann::json(channel).get<Channel>();
     CHECK(c2.name == "Canal" && c2.groups.size() == 1 && c2.stream.url == "https://cdn/x.m3u8");
     CHECK(c2.stream.referer == "https://ref/" && c2.stream.headers.at("Origin") == "https://o" && c2.stream.isLive);
+    CHECK(c2.alternatives.size() == 1 && c2.alternatives[0].url == "https://cdn/sd.m3u8");
+    // Favorites saved before versions existed have no "alternatives"
+    nlohmann::json old = nlohmann::json(channel);
+    old.erase("alternatives");
+    CHECK(old.get<Channel>().alternatives.empty());
 
     // Missing fields fall back to defaults instead of throwing
     MediaItem empty = nlohmann::json::object().get<MediaItem>();

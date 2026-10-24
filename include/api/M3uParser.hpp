@@ -41,6 +41,21 @@ private:
 // first occurrence and its order, unions the categories and fills a missing logo. Pure.
 std::vector<Channel> dedupe(std::vector<Channel> channels);
 
+// "Canal FHD H265", "Canal HD (720p) [Not 24/7]" -> base "Canal" + height. Quality marks are only taken from the
+// end of the name: words (4K/UHD, FHD/FULL HD, HD, SD, NNNp, codecs) and "(...)" / "[...]" suffixes.
+// An explicit "(576p)" wins over a word ("HD (576p)" is 576). height 0 = unknown. Pure.
+struct NameQuality {
+    std::string base;
+    int height = 0;
+};
+NameQuality splitQuality(std::string_view name);
+
+// Merges the versions of a channel (same base name, see splitQuality, case-insensitive; different tvg-ids
+// stay apart) into one: named after the base, best version in `stream`, the others in `alternatives`.
+// Best = 1080p, then above it (the Switch shows at most 1080p, 4K only costs bandwidth), then 720p, unknown,
+// lower ones. Same quality: list order. Keeps the order of first appearance and unions the categories. Pure.
+std::vector<Channel> groupVersions(std::vector<Channel> channels);
+
 // Keeps channels whose tvg-id country ("Name.<cc>@Feed") is in `countries` (lowercase ISO codes, iptv-org
 // uses "uk" for the United Kingdom) and drops regional feeds of other countries ("@DK", "@Poland"...).
 // Channels without a tvg-id in that format are kept. Empty `countries` = no filtering. Pure.

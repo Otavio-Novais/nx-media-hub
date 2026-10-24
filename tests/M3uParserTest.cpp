@@ -187,7 +187,93 @@ static void testIncremental() {
     CHECK(after.size() == 1 && after[0].name == "Canal");
 }
 
+static void testSplitQuality() {
+    auto check = [](const char* name, const char* base, int height) {
+        M3uParser::NameQuality q = M3uParser::splitQuality(name);
+        if (q.base != base || q.height != height) {
+            std::fprintf(stderr, "splitQuality(\"%s\") = \"%s\" %d, expected \"%s\" %d\n", name, q.base.c_str(),
+                         q.height, base, height);
+            failures++;
+        }
+    };
+    check("Love Nature (1080p)", "Love Nature", 1080);
+    check("Love Nature 4K (2160p) [Geo-blocked]", "Love Nature", 2160);
+    check("RTP Acores SD (504p) [Not 24/7]", "RTP Acores", 504);
+    check("Al Jazeera English HD (576p)", "Al Jazeera English", 576);  // the explicit height wins over "HD"
+    check("A&E FHD H.265", "A&E", 1080);
+    check("Canal Full HD", "Canal", 1080);
+    check("Canal (HD)", "Canal", 720);
+    check("iCarly (United States) SD", "iCarly (United States)", 480);  // "(United States)" is part of the name
+    check("Adrenalina Pura TV Brazil", "Adrenalina Pura TV Brazil", 0);
+    check("HD", "HD", 0);  // never strips the whole name
+    check("TV 4K", "TV", 2160);
+
+    // Other list formats: separators, marks in brackets, combined marks, backup markers
+    check("Canal | HD", "Canal", 720);
+    check("Canal - FHD", "Canal", 1080);
+    check("Canal-HD", "Canal", 720);
+    check("Canal [FHD]", "Canal", 1080);
+    check("Canal (FHD/H265)", "Canal", 1080);
+    check("Canal [HD H.264]", "Canal", 720);
+    check("Canal HD+", "Canal", 720);
+    check("Canal 1080i", "Canal", 1080);
+    check("Canal FHD 60FPS", "Canal", 1080);
+    check("Canal HD \xC2\xB9", "Canal", 720);         // "Canal HD ¹"
+    check("Canal\xC2\xB2", "Canal", 0);               // "Canal²"
+    check("Canal FHD \xE2\x81\xB4", "Canal", 1080);  // "Canal FHD ⁴"
+    check("Canal ALT", "Canal", 0);
+    check("Canal HD ALT2", "Canal", 720);
+    check("Canal SD Backup", "Canal", 480);
+    check("Canal \xE2\x80\x93 UHD", "Canal", 2160);  // "Canal – UHD"
+    check("Canal UHD (2160p) [Geo-blocked]", "Canal", 2160);
+    check("[HD]", "[HD]", 0);
+    check("Rede-TV", "Rede-TV", 0);
+    check("SporTV 2 HD", "SporTV 2", 720);  // a channel number is part of the name
+    check("FunBox UHD SD", "FunBox UHD", 480);  // a second resolution word is part of the name
+    check("Love Nature 4K (2160p)", "Love Nature", 2160);
+}
+
+static void testGroupVersions() {
+    auto channel = [](const std::string& name, const std::string& url, std::vector<std::string> groups = {},
+                      const std::string& tvgId = "") {
+        Channel c;
+        c.name         = name;
+        c.tvgId        = tvgId;
+        c.groups       = std::move(groups);
+        c.stream.url   = url;
+        c.stream.title = name;
+        return c;
+    };
+    auto grouped = M3uParser::groupVersions({
+        channel("Canal SD", "sd", {"Abertos"}),
+        channel("Outro", "outro"),
+        channel("Canal 4K (2160p)", "4k"),
+        channel("CANAL", "plain"),
+        channel("Canal FHD", "fhd", {"Esportes"}),
+        channel("Canal HD", "hd"),
+        channel("Record (1080p)", "record-sp", {}, "RecordTV.br@SP"),
+        channel("Record (720p)", "record-sp-720", {}, "RecordTV.br@RJ"),  // same channel, other feed: merged
+        channel("Record (1080p)", "record-pt", {}, "RecordTVPortugal.pt"),  // other channel: kept apart
+    });
+    CHECK(grouped.size() == 4);
+
+    const Channel& canal = grouped[0];
+    CHECK(canal.name == "Canal");
+    CHECK((canal.groups == std::vector<std::string>{"Abertos", "Esportes"}));
+    std::vector<std::string> urls;
+    for (const auto& v : canal.versions()) urls.push_back(v.url);
+    // 1080p, 4K, 720p, unknown, SD
+    CHECK((urls == std::vector<std::string>{"fhd", "4k", "hd", "plain", "sd"}));
+    CHECK(canal.versions()[0].title == "Canal FHD");  // each version keeps its own name for the player
+
+    CHECK(grouped[1].name == "Outro" && grouped[1].alternatives.empty());
+    CHECK(grouped[2].name == "Record" && grouped[2].stream.url == "record-sp" && grouped[2].alternatives.size() == 1);
+    CHECK(grouped[3].stream.url == "record-pt" && grouped[3].alternatives.empty());
+}
+
 int main() {
+    testSplitQuality();
+    testGroupVersions();
     testIncremental();
     testFilterByCountry();
     testDedupe();

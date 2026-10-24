@@ -17,6 +17,8 @@ const brls::Time SAVE_INTERVAL = 30 * 1000 * 1000;  // usec
 // that never ends, or a load that never starts) or when it ended (keep-open leaves the last frame up).
 // Like closing and opening the channel, but with growing waits so a server that is down is not hammered.
 const brls::Time STALL_TIMEOUT    = 15 * 1000 * 1000;
+// A version that has not started after this goes to the next one (same wait as the lists' check)
+const brls::Time STARTUP_TIMEOUT  = 10 * 1000 * 1000;
 const brls::Time STABLE_PLAYBACK  = 30 * 1000 * 1000;  // playing this long after a reload resets the attempts
 // Waits before each attempt; past the list the last one repeats (10 attempts take about 2 minutes)
 const brls::Time RETRY_DELAYS[]   = {1 * 1000 * 1000, 2 * 1000 * 1000, 4 * 1000 * 1000, 8 * 1000 * 1000,
@@ -33,8 +35,8 @@ std::string formatTime(double seconds) {
 
 }  // namespace
 
-VideoView::VideoView(StreamSource src, std::function<void()> onSave)
-    : source(std::move(src)), onPeriodicSave(std::move(onSave)) {
+VideoView::VideoView(std::vector<StreamSource> versions, std::function<void()> onSave)
+    : sources(std::move(versions)), source(sources.at(0)), onPeriodicSave(std::move(onSave)) {
     this->setFocusable(true);
     this->setHideHighlight(true);
     this->setGrow(1);
@@ -43,7 +45,7 @@ VideoView::VideoView(StreamSource src, std::function<void()> onSave)
     this->registerAction("player/pause"_i18n, brls::BUTTON_A, [this, &mpv](brls::View*) {
         if (gaveUp) {  // "connection lost, press A": start over
             attempts = 0;
-            reconnect();
+            startAttempt();
             return true;
         }
         mpv.togglePause();
@@ -121,42 +123,67 @@ void VideoView::watchLive() {
     brls::Time now = brls::getCPUTimeUsec();
     if (gaveUp) return;
     if (reconnectAt) {
-        if (now >= reconnectAt) reconnect();
+        if (now >= reconnectAt) startAttempt();
         return;
     }
 
     bool ended = !mpv.error.empty() || mpv.eofReached;
     // A pause by the user is not a stall (keep-open also pauses at the end: that one is caught above)
     if (mpv.position != lastPosition || (mpv.paused && !ended)) {
-        if (lastPosition >= 0 && mpv.position > lastPosition) played = true;
+        if (lastPosition >= 0 && mpv.position > lastPosition) playing = everPlayed = true;
         lastPosition = mpv.position;
         progressAt   = now;
     }
-    if (!played) return;
+
+    if (!playing) {
+        // This version has not started: failed or too slow, go down to the next one
+        if (!ended && now - progressAt < STARTUP_TIMEOUT) return;
+        if (current + 1 < sources.size()) {
+            brls::Logger::warning("player: version {}/{} did not start ({}), trying the next one", current + 1,
+                                  sources.size(), ended ? (mpv.error.empty() ? "ended" : mpv.error) : "timeout");
+            playVersion(current + 1);
+            return;
+        }
+        // None started. Never played: leave the error (or the loading) on screen, as before; otherwise this
+        // reconnection failed: wait and start over from the best version
+        if (everPlayed) scheduleRetry(now, "no version started");
+        return;
+    }
+
     bool stalled = now - progressAt > STALL_TIMEOUT;
     if (!ended && !stalled) {
         if (attempts > 0 && !mpv.loading && now - reloadedAt > STABLE_PLAYBACK) attempts = 0;
         return;
     }
+    scheduleRetry(now, ended ? (mpv.error.empty() ? "ended" : "failed: " + mpv.error) : "stalled");
+}
 
+void VideoView::scheduleRetry(brls::Time now, const std::string& reason) {
     if (attempts >= MAX_ATTEMPTS) {
         brls::Logger::error("player: live stream lost, giving up after {} reconnections", attempts);
         gaveUp = true;
         return;
     }
     brls::Time delay = RETRY_DELAYS[std::min(attempts, RETRY_STEPS - 1)];
-    brls::Logger::warning("player: live stream {}, reconnecting in {}s (attempt {}/{})",
-                          ended ? (mpv.error.empty() ? "ended" : "failed: " + mpv.error) : "stalled",
-                          delay / 1000000, attempts + 1, MAX_ATTEMPTS);
+    brls::Logger::warning("player: live stream {}, reconnecting in {}s (attempt {}/{})", reason, delay / 1000000,
+                          attempts + 1, MAX_ATTEMPTS);
     reconnectAt = now + delay;
 }
 
-void VideoView::reconnect() {
-    reconnectAt  = 0;
-    gaveUp       = false;
+// One reconnection: from the best version down, like opening the channel again
+void VideoView::startAttempt() {
+    reconnectAt = 0;
+    gaveUp      = false;
     attempts++;
-    reloadedAt   = brls::getCPUTimeUsec();
-    progressAt   = reloadedAt;
+    reloadedAt = brls::getCPUTimeUsec();
+    playVersion(0);
+}
+
+void VideoView::playVersion(size_t index) {
+    current      = index;
+    source       = sources[index];
+    playing      = false;
+    progressAt   = brls::getCPUTimeUsec();
     lastPosition = -1;
     MpvCore::instance().loadStream(source);
 }
@@ -183,8 +210,10 @@ void VideoView::drawOsd(NVGcontext* vg, float x, float y, float width, float hei
     // Status in the middle of the screen
     std::string status;
     if (gaveUp) status = "player/connection_lost"_i18n;
-    else if (reconnectAt || (attempts > 0 && (mpv.loading || mpv.buffering)))
+    else if (reconnectAt || (attempts > 0 && !playing))
         status = fmt::format(fmt::runtime("player/reconnecting"_i18n), attempts + (reconnectAt ? 1 : 0), MAX_ATTEMPTS);
+    else if (!playing && current > 0)
+        status = fmt::format(fmt::runtime("player/trying_version"_i18n), current + 1, sources.size());
     else if (!mpv.error.empty()) status = "player/error"_i18n + ": " + mpv.error;
     else if (mpv.loading || mpv.buffering) status = "player/loading"_i18n;
     if (!status.empty()) {

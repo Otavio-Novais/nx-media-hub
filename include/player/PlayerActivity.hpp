@@ -15,6 +15,8 @@ struct PlaybackContext {
 class PlayerActivity : public brls::Activity {
 public:
     explicit PlayerActivity(const StreamSource& source, PlaybackContext context = {});
+    // Versions of a live channel, best first (Channel::versions()): plays the first one that starts
+    explicit PlayerActivity(std::vector<StreamSource> versions);
     ~PlayerActivity() override;
 
 private:

@@ -78,7 +78,7 @@ public:
     }
 
     void didSelectRowAt(brls::RecyclerFrame*, brls::IndexPath index) override {
-        brls::Application::pushActivity(new PlayerActivity(channels[index.row]->stream));
+        brls::Application::pushActivity(new PlayerActivity(channels[index.row]->versions()));
     }
 
 private:
@@ -178,6 +178,10 @@ void LiveTvTab::loadLists() {
         loaded        = M3uParser::filterByCountry(std::move(loaded), countries);
         if (loaded.size() < unique)
             brls::Logger::info("live: {} channels from other countries hidden ({} left)", unique - loaded.size(), loaded.size());
+        size_t versions = loaded.size();
+        loaded          = M3uParser::groupVersions(std::move(loaded));
+        if (loaded.size() < versions)
+            brls::Logger::info("live: {} versions of the same channels grouped ({} left)", versions - loaded.size(), loaded.size());
         auto shared = std::make_shared<const std::vector<Channel>>(std::move(loaded));
         brls::sync([loaded = std::move(shared), errors, truncated, version]() mutable {
             listsLoading   = false;

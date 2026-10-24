@@ -7,6 +7,7 @@
   "live": "● LIVE",
   "error": "Playback error",
   "reconnecting": "Reconnecting... ({}/{})",
+  "trying_version": "Trying another version of the channel ({}/{})...",
   "connection_lost": "Connection lost. Press A to try again.",
   "no_tracks": "No tracks available",
   "hints": " Pause    ±10s    Audio    Subtitles    Back",

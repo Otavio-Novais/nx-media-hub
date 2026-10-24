@@ -12,6 +12,15 @@ struct Channel {
     std::string tvgId;                // iptv-org style "Channel.<country>@<feed>", ex: "AuctionHunters.se@NO"
     std::vector<std::string> groups;  // from group-title (";"-separated) or #EXTGRP
     StreamSource stream;              // isLive = true
+    // Other versions of the same channel (ex: "Canal HD" for "Canal FHD"), best first after `stream`
+    std::vector<StreamSource> alternatives;
+
+    // Every version, best first: the player tries them in this order
+    std::vector<StreamSource> versions() const {
+        std::vector<StreamSource> all = {stream};
+        all.insert(all.end(), alternatives.begin(), alternatives.end());
+        return all;
+    }
 };
 
 enum class MediaType { Movie, Series };

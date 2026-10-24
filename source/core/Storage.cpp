@@ -41,14 +41,16 @@ void from_json(const json& j, StreamSource& source) {
 }
 
 void to_json(json& j, const Channel& channel) {
-    j = {{"name", channel.name}, {"logo", channel.logo}, {"groups", channel.groups}, {"stream", channel.stream}};
+    j = {{"name", channel.name},     {"logo", channel.logo},
+         {"groups", channel.groups}, {"stream", channel.stream}, {"alternatives", channel.alternatives}};
 }
 
 void from_json(const json& j, Channel& channel) {
     channel.name   = j.value("name", "");
     channel.logo   = j.value("logo", "");
     channel.groups = j.value("groups", std::vector<std::string>{});
-    channel.stream = j.value("stream", StreamSource{});
+    channel.stream       = j.value("stream", StreamSource{});
+    channel.alternatives = j.value("alternatives", std::vector<StreamSource>{});
 }
 
 namespace Storage {
