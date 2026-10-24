@@ -60,13 +60,14 @@ Na primeira execução o app cria `sdmc:/switch/nx-media-hub/config.json` (no de
 | :--- | :--- |
 | `tmdbApiKey` | Chave da API do TMDB (v3), gratuita em themoviedb.org → Configurações → API. Necessária para o catálogo. |
 | `addons` | Lista de addons do Stremio (veja abaixo). |
-| `m3uUrls` | Listas de canais: URLs ou arquivos no SD (ex.: `sdmc:/switch/nx-media-hub/lista.m3u`). Padrão: a [lista limpa](https://github.com/Otavio-Novais/nx-media-hub-lists), com os canais em português, esportes e notícias do [iptv-org](https://github.com/iptv-org/iptv), sem repetidos e sem os fora do ar (verificada a cada 6 horas pelo GitHub Actions). |
+| `m3uUrls` | Listas de canais: URLs ou arquivos no SD (ex.: `sdmc:/switch/nx-media-hub/lista.m3u`). Padrão: a [lista limpa](https://github.com/Otavio-Novais/nx-media-hub-lists), com os canais em português, esportes e notícias do [iptv-org](https://github.com/iptv-org/iptv), sem repetidos e sem os fora do ar (verificada a cada 6 horas pelo GitHub Actions). As listas são lidas enquanto baixam (o arquivo nunca fica inteiro na memória), até **50 mil canais** no total: passando disso, o resto é ignorado e o app avisa. |
 | `countries` | Opcional. Mostra só canais desses países, pelo `tvg-id` das listas do iptv-org (`Canal.<país>@<versão>`), e esconde versões regionais de outros países (`@DK`, `@Poland`…). Ex.: `["br","pt","us","uk","ca"]` (o iptv-org usa `uk` para o Reino Unido). Vazio = todos. |
 
 ### Pela aba Configurações
 
 A chave do TMDB, os addons e as listas M3U podem ser editados no próprio Switch (teclado na tela; **A** num item abre a opção de
-apagar). As mudanças são gravadas no `config.json` na hora. Listas M3U novas valem ao recarregar a TV ao Vivo (**X**).
+apagar). As mudanças são gravadas no `config.json` na hora. A TV ao Vivo recarrega sozinha quando as
+listas mudam e avisa quando alguma delas não carrega.
 O filtro `countries` só é editado pelo arquivo.
 
 ### Pelo arquivo

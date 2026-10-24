@@ -10,7 +10,7 @@
   "lists": "Live TV lists (M3U)",
   "add_list": "+ Add list",
   "list_url": "M3U list URL or path",
-  "lists_note": "List changes apply when Live TV is reloaded (X). Channel countries are set in \"countries\" in config.json.",
+  "lists_note": "Live TV reloads by itself when the lists change. Channel countries are set in \"countries\" in config.json.",
   "remove_confirm": "Remove?\n{}",
   "about": "About",
   "version": "Version",

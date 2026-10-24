@@ -10,7 +10,7 @@
   "lists": "Listas de TV ao vivo (M3U)",
   "add_list": "+ Adicionar lista",
   "list_url": "URL ou caminho da lista M3U",
-  "lists_note": "Mudanças nas listas valem ao recarregar a TV ao Vivo (X). Os países dos canais são definidos em \"countries\" no config.json.",
+  "lists_note": "A TV ao Vivo recarrega sozinha quando as listas mudam. Os países dos canais são definidos em \"countries\" no config.json.",
   "remove_confirm": "Remover?\n{}",
   "about": "Sobre",
   "version": "Versão",

@@ -9,6 +9,8 @@
 
 namespace {
 
+const size_t MAX_LINE = 64 * 1024;  // longest line kept across chunks: real #EXTINF lines are well under 1 KB
+
 std::string_view trim(std::string_view s) {
     while (!s.empty() && (s.front() == ' ' || s.front() == '\t' || s.front() == '\r')) s.remove_prefix(1);
     while (!s.empty() && (s.back() == ' ' || s.back() == '\t' || s.back() == '\r')) s.remove_suffix(1);
@@ -95,45 +97,71 @@ void parseUrl(std::string_view line, StreamSource& stream) {
 namespace M3uParser {
 
 std::vector<Channel> parse(std::string_view content) {
-    std::vector<Channel> channels;
-    if (startsWith(content, "\xEF\xBB\xBF")) content.remove_prefix(3);
+    Parser parser;
+    parser.feed(content);
+    return parser.finish();
+}
 
-    Channel pending;  // filled by #EXTINF / #EXTGRP / #EXTVLCOPT until its URL line
-    bool hasInfo = false;
-
-    size_t pos = 0;
-    while (pos < content.size()) {
-        size_t end            = content.find('\n', pos);
-        std::string_view line = trim(content.substr(pos, end == std::string_view::npos ? end : end - pos));
-        pos                   = end == std::string_view::npos ? content.size() : end + 1;
-        if (line.empty()) continue;
-
-        if (startsWith(line, "#EXTINF:")) {
-            ExtInf info  = parseExtInf(line);
-            pending      = Channel{};
-            hasInfo      = true;
-            pending.name = !info.title.empty() ? info.title : info.attributes["tvg-name"];
-            pending.logo = info.attributes["tvg-logo"];
-            pending.tvgId = info.attributes["tvg-id"];
-            pending.groups = splitGroups(info.attributes["group-title"]);
-        } else if (startsWith(line, "#EXTGRP:")) {
-            if (pending.groups.empty()) pending.groups = splitGroups(line.substr(8));
-        } else if (startsWith(line, "#EXTVLCOPT:")) {
-            std::string_view opt = line.substr(11);
-            size_t eq            = opt.find('=');
-            if (eq != std::string_view::npos)
-                applyHeader(pending.stream, std::string(opt.substr(0, eq)), std::string(opt.substr(eq + 1)));
-        } else if (line[0] != '#' && line.find("://") != std::string_view::npos) {
-            parseUrl(line, pending.stream);
-            if (!hasInfo || pending.name.empty()) pending.name = pending.stream.url;
-            pending.stream.title  = pending.name;
-            pending.stream.isLive = true;
-            channels.push_back(std::move(pending));
-            pending = Channel{};
-            hasInfo = false;
+void Parser::feed(std::string_view chunk) {
+    while (!chunk.empty() && !full()) {
+        size_t end = chunk.find('\n');
+        if (end == std::string_view::npos) {
+            // A line this long is not a playlist line (binary or HTML garbage): drop it instead of buffering it
+            if (partial.size() + chunk.size() > MAX_LINE) partial.clear();
+            else partial.append(chunk);
+            return;
         }
+        if (partial.empty()) {
+            parseLine(chunk.substr(0, end));
+        } else {
+            if (partial.size() + end <= MAX_LINE) {
+                partial.append(chunk.substr(0, end));
+                parseLine(partial);
+            }
+            partial.clear();
+        }
+        chunk.remove_prefix(end + 1);
     }
-    return channels;
+}
+
+std::vector<Channel> Parser::finish() {
+    if (!partial.empty() && !full()) parseLine(partial);
+    partial.clear();
+    return std::move(channels);
+}
+
+void Parser::parseLine(std::string_view line) {
+    if (firstLine) {
+        firstLine = false;
+        if (startsWith(line, "\xEF\xBB\xBF")) line.remove_prefix(3);
+    }
+    line = trim(line);
+    if (line.empty() || full()) return;
+
+    if (startsWith(line, "#EXTINF:")) {
+        ExtInf info    = parseExtInf(line);
+        pending        = Channel{};
+        hasInfo        = true;
+        pending.name   = !info.title.empty() ? info.title : info.attributes["tvg-name"];
+        pending.logo   = info.attributes["tvg-logo"];
+        pending.tvgId  = info.attributes["tvg-id"];
+        pending.groups = splitGroups(info.attributes["group-title"]);
+    } else if (startsWith(line, "#EXTGRP:")) {
+        if (pending.groups.empty()) pending.groups = splitGroups(line.substr(8));
+    } else if (startsWith(line, "#EXTVLCOPT:")) {
+        std::string_view opt = line.substr(11);
+        size_t eq            = opt.find('=');
+        if (eq != std::string_view::npos)
+            applyHeader(pending.stream, std::string(opt.substr(0, eq)), std::string(opt.substr(eq + 1)));
+    } else if (line[0] != '#' && line.find("://") != std::string_view::npos) {
+        parseUrl(line, pending.stream);
+        if (!hasInfo || pending.name.empty()) pending.name = pending.stream.url;
+        pending.stream.title  = pending.name;
+        pending.stream.isLive = true;
+        channels.push_back(std::move(pending));
+        pending = Channel{};
+        hasInfo = false;
+    }
 }
 
 std::vector<Channel> dedupe(std::vector<Channel> channels) {

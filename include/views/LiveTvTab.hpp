@@ -1,6 +1,7 @@
 #pragma once
 
 #include <borealis.hpp>
+#include <memory>
 
 #include "models/MediaItem.hpp"
 #include "views/RemoteImage.hpp"
@@ -19,6 +20,9 @@ private:
     Channel channel;  // copy: the cell is recycled for other channels
 };
 
+// Loaded channels, shared by the session cache and the tab instead of copied (a big list takes tens of MB)
+using ChannelList = std::shared_ptr<const std::vector<Channel>>;
+
 // Live channels from the M3U lists in config.json: categories on the left, channels on the right.
 class LiveTvTab : public brls::Box {
 public:
@@ -26,7 +30,7 @@ public:
     ~LiveTvTab() override;
     static brls::View* create();
 
-    void showChannels(std::vector<Channel> loaded, const std::string& error);
+    void showChannels(ChannelList loaded, const std::string& error);
 
 private:
     void loadLists();
@@ -36,7 +40,7 @@ private:
     BRLS_BIND(brls::RecyclerFrame, channelList, "channels");
     BRLS_BIND(brls::Label, status, "status");
 
-    std::vector<Channel> channels;
+    ChannelList channels;
     std::vector<const Channel*> visible;  // channels of the selected category
     std::vector<std::pair<std::string, brls::RadioCell*>> categoryCells;
 };

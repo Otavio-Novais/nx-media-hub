@@ -3,6 +3,8 @@
   "no_lists": "No M3U list configured. Add URLs to m3uUrls in config.json.",
   "empty": "No channels found in the configured lists.",
   "error": "Could not load the lists:",
+  "partial_error": "Some lists did not load:",
+  "truncated": "{} channel limit reached. The rest was ignored in:",
   "all": "All",
   "others": "Others",
   "reload": "Reload lists",
