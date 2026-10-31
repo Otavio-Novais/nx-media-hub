@@ -23,6 +23,11 @@ Diretrizes, decisões e pendências conhecidas: [`docs/diretrizes.md`](docs/dire
 | 3 | Catálogo TMDB | ✅ |
 | 4 | Addons Stremio + seletor de fontes + legendas | ✅ |
 | 5 | Início, histórico, favoritos, tela de configurações e ícone | ✅ |
+| 6 | Estabilidade: crash de heap, fila de rede com prioridade, `crash.log` | 🚧 |
+| 7 | Guia de programação (EPG) na TV ao vivo | ⏳ |
+| 8 | Atualização pelo próprio app | ⏳ |
+
+Foco atual: **TV ao vivo**. Filmes e séries estão pausados (fora do release) e serão retomados depois.
 
 ---
 

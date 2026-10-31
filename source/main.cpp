@@ -47,6 +47,11 @@ int main(int argc, char* argv[]) {
     brls::Application::createWindow("main/title"_i18n);
     brls::Application::getPlatform()->setThemeVariant(brls::ThemeVariant::DARK);
     brls::Application::setGlobalQuit(true);
+#ifdef __SWITCH__
+    // Quitting back to the Homebrew Menu keeps the hbloader process, and the next launch in it crashed on its
+    // first frame (malloc inside Mesa's glClear): end the process and go back to HOME instead
+    brls::Application::getPlatform()->exitToHomeMode(true);
+#endif
     brls::Application::getExitEvent()->subscribe([] { brls::Logger::info("application exit requested"); });
 
     brls::Application::registerXMLView("RemoteImage", RemoteImage::create);

@@ -152,12 +152,18 @@ docker run --rm -v "$(pwd):/project" -w /project devkitpro/devkita64:latest bash
 - [x] **Fase 3 (Catálogo VOD):** Integrar `TmdbClient` com busca em português, telas de detalhes de filmes e seletor de temporadas/episódios para séries.
 - [x] **Fase 4 (Provedores / Addons):** Implementar `AddonClient` para buscar as streams de um filme/episódio e abrir o modal de seleção de fonte.
 - [x] **Fase 5 (Polimento):** Implementar histórico ("Continuar Assistindo"), favoritos e arquivo `config.json` editável.
+- [ ] **Fase 6 (Estabilidade, v0.6):** ~~Fechar o crash de heap~~ (resolvido: era a reabertura no mesmo processo do hbloader, ver §9; instrumentação removida); fila do `HttpClient` com prioridade (listas M3U antes dos logos, logos por linha visível); `crash.log` no SD. Pronto quando: 1 h de uso da TV ao vivo (troca de abas, zapping) sem fechar e lista M3U em < 3 s.
+- [ ] **Fase 7 (Guia de programação, v0.7):** EPG XMLTV casado pelo `tvg-id`, parser puro testável em streaming, cache no SD; "Agora / A seguir" na lista da TV ao vivo e no OSD.
+- [ ] **Fase 8 (Atualização pelo app, v0.8):** "Verificar atualização" nas Configurações (releases do GitHub num repo público), download com `.bak` e troca atômica.
+- **Backlog (TV):** busca de canais na TV ao vivo, verificação de certificado TLS.
+- **Filmes e séries (pausado):** catálogo e addons seguem fora do release (`ENABLE_MOVIES=OFF`); serão retomados depois, inspirados no app STREAMFINEX (Real-Debrid direto, próximo episódio automático, legendas embutidas Latin-1 ficam para essa retomada).
 ---
 
 ## 9. Pendências Conhecidas
 - **Ordem de download das imagens:** a fila é LIFO (pedido mais recente primeiro, bom ao trocar de aba), mas na carga inicial inverte a ordem dentro de cada linha. Ideal: prioridade por linha visível, em ordem.
 - **Prioridade de requisições (resolvido na 0.5.2):** o `HttpClient` continua com uma requisição por vez, mas as imagens (`Priority::Background`) só começam quando nenhuma lista/detalhe está esperando. Antes, a lista M3U chegou a esperar 17 s atrás das imagens.
-- **Crash nativo intermitente:** fechamentos sem log ocorreram com requisições HTTPS concorrentes; a serialização no `HttpClient` é a mitigação atual (hipótese: mbedtls do curl sem suporte a threads no Switch). Também ocorreu um fechamento ao abrir/fechar uma série repetidamente (antes da serialização) — revalidar.
+- **Crash ao reabrir (resolvido):** fechar com "+" voltava ao Homebrew Menu no mesmo processo do hbloader, e a abertura seguinte caía no primeiro frame (`malloc` dentro do `glClear` do Mesa, Data Abort; todos os relatórios em `sdmc:/atmosphere/crash_reports` tinham essa pilha). O app agora usa `exitToHomeMode(true)`: o "+" encerra o processo e volta ao HOME. Diagnóstico: simbolizar o relatório com o `.elf` exato da build (`aarch64-none-elf-addr2line`). Não deixar verificações por frame (ex: `mallinfo()`) em builds de teste de vídeo: travavam a reprodução.
+- **Crash nativo intermitente (antigo):** fechamentos sem log ocorreram com requisições HTTPS concorrentes; a serialização no `HttpClient` é a mitigação atual (hipótese: mbedtls do curl sem suporte a threads no Switch). Também ocorreu um fechamento ao abrir/fechar uma série repetidamente (antes da serialização) — revalidar.
 - **`std::thread` não funciona no Switch** (devkitA64 lança "Function not implemented"): usar `runInBackground` (pthread) em `core/Background.hpp`.
 - **TLS sem verificação de certificado no Switch** (sem CA store acessível, mesmo padrão do wiliwili).
 - **Legendas (resolvido na Fase 4):** sem fontconfig no Switch, o libass usa `romfs:/font/font.ttf`; o libmpv do Switch não tem iconv, então o app converte legendas externas para UTF-8 (`core/TextEncoding`) e as entrega via `memory://`. Legendas embutidas no arquivo (MKV) em Latin-1 continuam sem conversão.
