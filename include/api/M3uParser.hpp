@@ -11,6 +11,7 @@
 namespace M3uParser {
 
 // Parses an extended M3U playlist (#EXTINF, #EXTGRP, #EXTVLCOPT and Kodi-style "url|Header=value" suffixes).
+// Live channels only: movies and series episodes (Xtream "/movie/", "/series/", video files) are skipped.
 // Pure function: no I/O, safe to unit test on the host.
 std::vector<Channel> parse(std::string_view content);
 

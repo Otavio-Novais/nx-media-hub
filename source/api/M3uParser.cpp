@@ -92,6 +92,19 @@ void parseUrl(std::string_view line, StreamSource& stream) {
     }
 }
 
+// Movies and series episodes, which Xtream panel exports mix with the live channels: "/movie/" or "/series/"
+// in the path, or a video file (".mp4", ".mkv", ".avi")
+bool isVod(const std::string& url) {
+    std::string path = url.substr(0, url.find_first_of("?#"));
+    for (char& c : path) c = (char)std::tolower((unsigned char)c);
+    if (path.find("/movie/") != std::string::npos || path.find("/series/") != std::string::npos) return true;
+    for (const char* ext : {".mp4", ".mkv", ".avi"}) {
+        size_t len = std::char_traits<char>::length(ext);
+        if (path.size() >= len && path.compare(path.size() - len, len, ext) == 0) return true;
+    }
+    return false;
+}
+
 }  // namespace
 
 namespace M3uParser {
@@ -155,6 +168,11 @@ void Parser::parseLine(std::string_view line) {
             applyHeader(pending.stream, std::string(opt.substr(0, eq)), std::string(opt.substr(eq + 1)));
     } else if (line[0] != '#' && line.find("://") != std::string_view::npos) {
         parseUrl(line, pending.stream);
+        if (isVod(pending.stream.url)) {
+            pending = Channel{};
+            hasInfo = false;
+            return;
+        }
         if (!hasInfo || pending.name.empty()) pending.name = pending.stream.url;
         pending.stream.title  = pending.name;
         pending.stream.isLive = true;

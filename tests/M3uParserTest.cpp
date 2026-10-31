@@ -187,7 +187,24 @@ static void testIncremental() {
     CHECK(after.size() == 1 && after[0].name == "Canal");
 }
 
+static void testSkipsVod() {
+    // Xtream panel exports mix movies and series episodes with the live channels: only the channels are kept,
+    // and they do not count towards the channel limit
+    M3uParser::Parser parser(2);
+    parser.feed("#EXTM3U\n"
+                "#EXTINF:-1 group-title=\"Filmes\",Filme\nhttp://panel.example.com:80/movie/user/pass/1.mp4\n"
+                "#EXTINF:-1 group-title=\"Canais\",Globo\nhttp://panel.example.com:80/user/pass/2\n"
+                "#EXTINF:-1 group-title=\"Séries\",S01E01\nhttp://panel.example.com:80/series/user/pass/3.mkv\n"
+                "#EXTINF:-1,Video\nhttps://cdn.example.com/video.MP4?token=x\n"
+                "#EXTINF:-1,Avi\nhttps://cdn.example.com/a.avi\n"
+                "#EXTINF:-1,SBT\nhttps://cdn.example.com/sbt/index.m3u8\n");
+    CHECK(parser.full());
+    auto channels = parser.finish();
+    CHECK(channels.size() == 2 && channels[0].name == "Globo" && channels[1].name == "SBT");
+}
+
 int main() {
+    testSkipsVod();
     testIncremental();
     testFilterByCountry();
     testDedupe();
