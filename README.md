@@ -9,9 +9,9 @@ Homebrew `.nro` de uso pessoal para Nintendo Switch (Atmosphère) que junta, num
 - **Player:** libmpv com decodificação por hardware do Tegra (`nvtegra-copy`), troca de áudio/legenda e legendas externas; retoma de onde parou.
 - **Configurações:** chave do TMDB, addons e listas M3U editáveis no próprio Switch.
 
-Versão atual: **0.5.2**. O `.nro` dos [releases](https://github.com/Otavio-Novais/nx-media-hub/releases) traz só a
+Versão atual: **0.5.4**. O `.nro` dos [releases](https://github.com/Otavio-Novais/nx-media-hub/releases) traz só a
 **TV ao Vivo** (Filmes e Séries ainda em desenvolvimento, veja [Build](#build)): copie para `sdmc:/switch/` e abra pelo
-Homebrew Menu.
+Homebrew Menu. Para sair, **+** fecha o app e volta ao menu HOME do Switch.
 
 Diretrizes, decisões e pendências conhecidas: [`docs/diretrizes.md`](docs/diretrizes.md).
 
