@@ -5,11 +5,13 @@ Homebrew `.nro` de uso pessoal para Nintendo Switch (Atmosphère) que junta, num
 - **Início:** Continuar assistindo, Favoritos e Canais favoritos.
 - **Filmes e Séries:** catálogo do TMDB em português (destaques, busca, detalhes, temporadas e episódios).
 - **Fontes via addons do Stremio:** "Assistir" consulta os addons configurados e lista as fontes de vídeo.
-- **TV ao Vivo:** listas `.m3u` / `.m3u8` com categorias e logos.
+- **TV ao Vivo:** listas `.m3u` / `.m3u8` com categorias e logos. O mesmo canal vindo de várias listas e qualidades
+  vira um só, com troca automática de fonte quando uma cai (FHD → HD → sem marca → 4K → SD), e as categorias de
+  painéis diferentes ("CANAIS = ESPN", "Canais | ESPN") são unificadas.
 - **Player:** libmpv com decodificação por hardware do Tegra (`nvtegra-copy`), troca de áudio/legenda e legendas externas; retoma de onde parou.
 - **Configurações:** chave do TMDB, addons e listas M3U editáveis no próprio Switch.
 
-Versão atual: **0.5.4**. O `.nro` dos [releases](https://github.com/Otavio-Novais/nx-media-hub/releases) traz só a
+Versão atual: **0.5.5**. O `.nro` dos [releases](https://github.com/Otavio-Novais/nx-media-hub/releases) traz só a
 **TV ao Vivo** (Filmes e Séries ainda em desenvolvimento, veja [Build](#build)): copie para `sdmc:/switch/` e abra pelo
 Homebrew Menu. Para sair, **+** fecha o app e volta ao menu HOME do Switch.
 
@@ -41,7 +43,8 @@ Foco atual: **TV ao vivo**. Filmes e séries estão pausados (fora do release) e
 | Detalhes | **A** em "Assistir" ou num episódio | Buscar fontes nos addons |
 | Detalhes | **X** | Favoritar / desfavoritar |
 | Player | **A** | Pausar / continuar |
-| Player | **◀ ▶** ou **L R** | Voltar / avançar 10 s |
+| Player (filmes e séries) | **◀ ▶** ou **L R** | Voltar / avançar 10 s |
+| Player (TV ao vivo) | **◀ ▶** ou **L R** | Fonte anterior / próxima do canal |
 | Player | **X** / **Y** | Faixa de áudio / legenda |
 | Player | **B** | Sair do vídeo |
 | Qualquer tela | **+** | Fechar o app |
