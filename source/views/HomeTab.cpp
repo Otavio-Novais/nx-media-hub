@@ -31,7 +31,7 @@ public:
         ((brls::Label*)getView("name"))->setText(channel.name);
         ((RemoteImage*)getView("logo"))->setImageFromUrl(channel.logo);
         this->registerClickAction([channel](brls::View*) {
-            brls::Application::pushActivity(new PlayerActivity(channel.stream));
+            brls::Application::pushActivity(new PlayerActivity(channel.sources()));
             return true;
         });
         this->registerAction("home/remove"_i18n, brls::BUTTON_Y, [channel](brls::View*) {

@@ -165,7 +165,39 @@ static void testRecoverTemp() {
     std::filesystem::remove_all(dir);
 }
 
+static void testGroupedChannelFavorites() {
+    std::string dir  = tempDir();
+    std::string path = dir + "/favorites.json";
+    // Saved before channels were grouped: one source, the name still has its quality tag
+    std::filesystem::create_directories(dir);
+    std::ofstream(path) << R"({"media": [], "channels": [{"name": "ESPN 4 FHD", "stream": {"url": "http://a/1"}}]})";
+    Favorites favorites(path);
+    favorites.load();
+    CHECK(favorites.channels().size() == 1);
+
+    Channel grouped;
+    grouped.name               = "ESPN 4";
+    grouped.stream.url         = "http://b/2";
+    grouped.stream.quality     = "FHD";
+    grouped.alternates         = {StreamSource{}};
+    grouped.alternates[0].url  = "http://a/1";
+    CHECK(favorites.contains(grouped));  // same channel, whatever source is now the best
+    CHECK(!favorites.toggle(grouped));   // so the star removes the old favorite
+    CHECK(favorites.channels().empty());
+
+    // Every source is saved, so the favorite still switches sources when played from Home
+    CHECK(favorites.toggle(grouped));
+    Favorites reloaded(path);
+    reloaded.load();
+    CHECK(reloaded.channels().size() == 1);
+    const auto& back = reloaded.channels()[0];
+    CHECK(back.stream.quality == "FHD" && back.alternates.size() == 1 && back.alternates[0].url == "http://a/1");
+
+    std::filesystem::remove_all(dir);
+}
+
 int main() {
+    testGroupedChannelFavorites();
     testRecoverTemp();
     testSerialization();
     testHistory();

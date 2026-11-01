@@ -28,7 +28,8 @@ void from_json(const json& j, MediaItem& item) {
 
 void to_json(json& j, const StreamSource& source) {
     j = {{"title", source.title},         {"url", source.url},       {"userAgent", source.userAgent},
-         {"referer", source.referer},     {"headers", source.headers}, {"isLive", source.isLive}};
+         {"referer", source.referer},     {"headers", source.headers}, {"isLive", source.isLive},
+         {"quality", source.quality}};
 }
 
 void from_json(const json& j, StreamSource& source) {
@@ -38,17 +39,20 @@ void from_json(const json& j, StreamSource& source) {
     source.referer   = j.value("referer", "");
     source.headers   = j.value("headers", std::map<std::string, std::string>{});
     source.isLive    = j.value("isLive", false);
+    source.quality   = j.value("quality", "");
 }
 
 void to_json(json& j, const Channel& channel) {
-    j = {{"name", channel.name}, {"logo", channel.logo}, {"groups", channel.groups}, {"stream", channel.stream}};
+    j = {{"name", channel.name},     {"logo", channel.logo},           {"groups", channel.groups},
+         {"stream", channel.stream}, {"alternates", channel.alternates}};
 }
 
 void from_json(const json& j, Channel& channel) {
     channel.name   = j.value("name", "");
     channel.logo   = j.value("logo", "");
     channel.groups = j.value("groups", std::vector<std::string>{});
-    channel.stream = j.value("stream", StreamSource{});
+    channel.stream     = j.value("stream", StreamSource{});
+    channel.alternates = j.value("alternates", std::vector<StreamSource>{});  // missing before grouped channels
 }
 
 namespace Storage {

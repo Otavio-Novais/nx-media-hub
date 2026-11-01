@@ -105,6 +105,242 @@ bool isVod(const std::string& url) {
     return false;
 }
 
+// "Globo SP [ALT] FHD*" -> {"GLOBO", "SP", "FHD"}: uppercase words without [..]/(..) parts, symbols or emoji.
+// "." is dropped inside a word ("H.265" -> "H265"); accented Latin letters are kept (and uppercased).
+std::vector<std::string> nameWords(std::string_view name) {
+    std::vector<std::string> words;
+    std::string word;
+    auto flush = [&] {
+        if (!word.empty()) words.push_back(std::move(word));
+        word.clear();
+    };
+    int depth = 0;  // inside [..] or (..)
+    for (size_t i = 0; i < name.size(); i++) {
+        unsigned char c = name[i];
+        if (c == '[' || c == '(') {
+            flush();
+            depth++;
+        } else if (c == ']' || c == ')') {
+            if (depth > 0) depth--;
+        } else if (depth > 0) {
+            continue;
+        } else if (std::isalnum(c) || c == '+' || c == '&') {
+            word += (char)std::toupper(c);
+        } else if (c == '.') {
+            continue;
+        } else if (c == 0xC3 && i + 1 < name.size()) {
+            // Latin-1 letters (á, ç, õ...): uppercase is 0x20 lower in the second byte
+            unsigned char next = name[++i];
+            if (next >= 0xA0 && next <= 0xBE && next != 0xB7) next -= 0x20;
+            word += (char)c;
+            word += (char)next;
+        } else {
+            flush();
+            // Other UTF-8 sequences are symbols here (emoji, "ᴴᴰ"): skip their continuation bytes
+            if (c >= 0xC0)
+                while (i + 1 < name.size() && ((unsigned char)name[i + 1] & 0xC0) == 0x80) i++;
+        }
+    }
+    flush();
+    return words;
+}
+
+enum class Quality { FullHd, Hd, None, UltraHd, Sd };  // the order sources are tried in
+
+bool isTag(const std::string& word) {
+    static const std::set<std::string> tags = {"4K",   "UHD",  "2160P", "FHD",  "FULLHD", "1080P", "1080",
+                                               "HD",   "720P", "720",   "SD",   "480P",   "H265",  "HEVC",
+                                               "H264", "60FPS", "50FPS", "ALT", "ALTERNATIVO"};
+    return tags.count(word) > 0;
+}
+
+Quality qualityOf(const std::vector<std::string>& words) {
+    bool fullHd = false, hd = false, sd = false;
+    for (size_t i = 0; i < words.size(); i++) {
+        const auto& w = words[i];
+        if (w == "4K" || w == "UHD" || w == "2160P") return Quality::UltraHd;
+        if (w == "FHD" || w == "FULLHD" || w == "1080P" || w == "1080" || (w == "FULL" && i + 1 < words.size() && words[i + 1] == "HD"))
+            fullHd = true;
+        else if (w == "HD" || w == "720P" || w == "720") hd = true;
+        else if (w == "SD" || w == "480P") sd = true;
+    }
+    return fullHd ? Quality::FullHd : hd ? Quality::Hd : sd ? Quality::Sd : Quality::None;
+}
+
+std::string qualityLabel(Quality quality) {
+    switch (quality) {
+        case Quality::FullHd: return "FHD";
+        case Quality::Hd: return "HD";
+        case Quality::UltraHd: return "4K";
+        case Quality::Sd: return "SD";
+        default: return "";
+    }
+}
+
+// Words that are not tags ("FULL" only counts as a tag before "HD")
+std::vector<std::string> withoutTags(const std::vector<std::string>& words) {
+    std::vector<std::string> kept;
+    for (size_t i = 0; i < words.size(); i++) {
+        if (isTag(words[i]) || (words[i] == "FULL" && i + 1 < words.size() && words[i + 1] == "HD")) continue;
+        kept.push_back(words[i]);
+    }
+    return kept;
+}
+
+// "http://host:80/user/pass/1" -> "host:80"
+std::string serverOf(const std::string& url) {
+    size_t start = url.find("://");
+    start        = start == std::string::npos ? 0 : start + 3;
+    return url.substr(start, url.find('/', start) - start);
+}
+
+// "ESPN 4 FHD H.265" -> "ESPN 4": the original spelling, minus [..]/(..) parts and tag or symbol-only words
+std::string displayName(std::string_view name) {
+    std::string kept, bracketFree;
+    int depth = 0;
+    for (char c : name) {
+        if (c == '[' || c == '(') depth++;
+        else if ((c == ']' || c == ')') && depth > 0) depth--;
+        else if (depth == 0) bracketFree += c;
+    }
+    std::vector<std::string> raw;
+    size_t start = 0;
+    while (start < bracketFree.size()) {
+        size_t end = bracketFree.find_first_of(" \t", start);
+        if (end == std::string::npos) end = bracketFree.size();
+        if (end > start) raw.push_back(bracketFree.substr(start, end - start));
+        start = end + 1;
+    }
+    for (size_t i = 0; i < raw.size(); i++) {
+        auto words = nameWords(raw[i]);
+        bool fullBeforeHd = words.size() == 1 && words[0] == "FULL" && i + 1 < raw.size() && nameWords(raw[i + 1]) == std::vector<std::string>{"HD"};
+        if (fullBeforeHd || withoutTags(words).empty()) continue;  // "FHD", "H.265", "⚽", "FULL HD"
+        if (!kept.empty()) kept += ' ';
+        kept += raw[i];
+    }
+    return kept.empty() ? std::string(trim(name)) : kept;
+}
+
+bool isLatinLetter(unsigned char second) { return second >= 0x80 && second <= 0xBE && second != 0x97 && second != 0xB7; }
+bool isLatinLower(unsigned char second) { return second >= 0xA0 && second <= 0xBE && second != 0xB7; }
+
+bool isSeparator(char c) { return c == ' ' || c == '-' || c == '=' || c == ':' || c == '|' || c == '\t'; }
+
+// "CANAIS: GLOBO CAPITAIS  - ✨" -> "GLOBO CAPITAIS": no emoji/symbols, no "CANAIS" / "Z - CANAIS" prefix,
+// no separators at the ends, single spaces
+std::string stripCategory(std::string_view raw) {
+    std::string text;
+    for (size_t i = 0; i < raw.size(); i++) {
+        unsigned char c = raw[i];
+        if (c < 0x80) {
+            text += (char)c;
+        } else if (c == 0xC3 && i + 1 < raw.size() && isLatinLetter(raw[i + 1])) {
+            text += (char)c;
+            text += raw[++i];
+        } else {
+            text += ' ';  // emoji and other symbols: skip the whole UTF-8 sequence
+            if (c >= 0xC0)
+                while (i + 1 < raw.size() && ((unsigned char)raw[i + 1] & 0xC0) == 0x80) i++;
+        }
+    }
+    auto trimEnds = [](std::string& s) {
+        size_t start = 0, end = s.size();
+        while (start < end && isSeparator(s[start])) start++;
+        while (end > start && isSeparator(s[end - 1])) end--;
+        s = s.substr(start, end - start);
+    };
+    auto startsWithWord = [](const std::string& s, const char* word) {
+        size_t n = std::char_traits<char>::length(word);
+        if (s.size() <= n) return false;
+        for (size_t i = 0; i < n; i++)
+            if (std::toupper((unsigned char)s[i]) != word[i]) return false;
+        return isSeparator(s[n]);
+    };
+    trimEnds(text);
+    if (startsWithWord(text, "Z")) {
+        text.erase(0, 1);
+        trimEnds(text);
+    }
+    if (startsWithWord(text, "CANAIS")) {
+        text.erase(0, 6);
+        trimEnds(text);
+    }
+    std::string single;
+    for (char c : text)
+        if (c != ' ' || (!single.empty() && single.back() != ' ')) single += c;
+    return single;
+}
+
+// Case- and accent-insensitive identity of a stripped category ("Documentários" == "DOCUMENTARIOS")
+std::string categoryKey(const std::string& name) {
+    // Latin-1 letters by second UTF-8 byte (0x80-0xBF), uppercase and lowercase rows share a base letter
+    static const char* base = "AAAAAAACEEEEIIIIDNOOOOOxOUUUUYTsaaaaaaaceeeeiiiidnooooo/ouuuuyty";
+    std::string key;
+    for (size_t i = 0; i < name.size(); i++) {
+        unsigned char c = name[i];
+        if (c == 0xC3 && i + 1 < name.size()) key += (char)std::toupper((unsigned char)base[(unsigned char)name[++i] - 0x80]);
+        else key += (char)std::toupper(c);
+    }
+    return key;
+}
+
+// An all-caps name reads better capitalized: "AREA DO CLIENTE" -> "Area do Cliente". Words of up to 4
+// letters stay (ESPN, HBO, SBT) except Portuguese connectives; words with digits stay ("24HRS")
+std::string readableCategory(const std::string& name) {
+    bool hasLower = false;
+    for (size_t i = 0; i < name.size(); i++) {
+        unsigned char c = name[i];
+        if (std::islower(c) || (c == 0xC3 && i + 1 < name.size() && isLatinLower(name[i + 1]))) hasLower = true;
+    }
+    if (hasLower) return name;
+
+    static const std::set<std::string> connectives = {"DE", "DO", "DA", "DOS", "DAS", "E", "EM"};
+    std::string result;
+    size_t start = 0;
+    while (start <= name.size()) {
+        size_t end       = name.find(' ', start);
+        std::string word = name.substr(start, end == std::string::npos ? std::string::npos : end - start);
+        size_t letters = 0;
+        bool digits    = false;
+        for (size_t i = 0; i < word.size(); i++) {
+            unsigned char c = word[i];
+            if (std::isdigit(c)) digits = true;
+            if (std::isalpha(c)) letters++;
+            if (c == 0xC3) letters++, i++;
+        }
+        if (!result.empty() && connectives.count(word)) {
+            for (char& c : word) c = (char)std::tolower((unsigned char)c);
+        } else if (letters > 4 && !digits) {
+            for (size_t i = 1; i < word.size(); i++) {
+                unsigned char c = word[i];
+                if (c == 0xC3 && i + 1 < word.size()) {
+                    unsigned char& next = (unsigned char&)word[++i];
+                    if (next >= 0x80 && next <= 0x9E && next != 0x97) next += 0x20;
+                } else {
+                    word[i] = (char)std::tolower(c);
+                }
+            }
+        }
+        if (!result.empty()) result += ' ';
+        result += word;
+        if (end == std::string::npos) break;
+        start = end + 1;
+    }
+    return result;
+}
+
+// Accents first, then a panel's own mixed case, then our capitalization of an all-caps name:
+// "Documentários" (from "DOCUMENTÁRIOS") > "Documentarios"; "SporTV" > "Sportv" (from "SPORTV") > "BAND"
+int readability(const std::string& name, bool capitalized) {
+    bool lower = false, accent = false;
+    for (size_t i = 0; i < name.size(); i++) {
+        unsigned char c = name[i];
+        if (std::islower(c)) lower = true;
+        if (c == 0xC3) accent = true;
+    }
+    return (accent ? 4 : 0) + (lower ? (capitalized ? 1 : 2) : 0);
+}
+
 }  // namespace
 
 namespace M3uParser {
@@ -198,6 +434,95 @@ std::vector<Channel> dedupe(std::vector<Channel> channels) {
         if (kept.logo.empty()) kept.logo = channel.logo;
     }
     return unique;
+}
+
+std::string channelGroupKey(std::string_view name) {
+    std::string key;
+    for (const auto& word : withoutTags(nameWords(name))) {
+        if (!key.empty()) key += ' ';
+        key += word;
+    }
+    return key;
+}
+
+std::vector<Channel> groupSources(std::vector<Channel> channels) {
+    struct Entry {
+        Quality quality;
+        int turn;  // how many earlier entries of this quality came from the same server
+        Channel channel;
+    };
+    std::vector<std::vector<Entry>> groups;
+    std::unordered_map<std::string, size_t> byKey;
+    for (auto& channel : channels) {
+        auto words         = nameWords(channel.name);
+        std::string key    = channelGroupKey(channel.name);
+        Quality quality    = qualityOf(words);
+        // A name made only of tags says nothing about the channel: never merge it
+        if (key.empty()) key = "\n" + channel.stream.url;
+        auto [it, inserted] = byKey.try_emplace(key, groups.size());
+        if (inserted) groups.emplace_back();
+        groups[it->second].push_back({quality, 0, std::move(channel)});
+    }
+
+    std::vector<Channel> grouped;
+    grouped.reserve(groups.size());
+    for (auto& entries : groups) {
+        std::string name = displayName(entries.front().channel.name);
+        std::string logo;
+        std::vector<std::string> categories;
+        for (const auto& entry : entries) {
+            if (logo.empty()) logo = entry.channel.logo;
+            for (const auto& group : entry.channel.groups)
+                if (std::find(categories.begin(), categories.end(), group) == categories.end()) categories.push_back(group);
+        }
+        // Within a quality, alternate between servers: one that is down costs a single try, not one per source
+        std::map<std::pair<Quality, std::string>, int> perServer;
+        for (auto& entry : entries) entry.turn = perServer[{entry.quality, serverOf(entry.channel.stream.url)}]++;
+        std::stable_sort(entries.begin(), entries.end(), [](const Entry& a, const Entry& b) {
+            return a.quality != b.quality ? a.quality < b.quality : a.turn < b.turn;
+        });
+        for (auto& entry : entries) {
+            entry.channel.stream.title   = name;
+            entry.channel.stream.quality = qualityLabel(entry.quality);
+        }
+
+        Channel channel = std::move(entries.front().channel);
+        channel.name    = name;
+        channel.logo    = logo;
+        channel.groups  = std::move(categories);
+        for (size_t i = 1; i < entries.size(); i++) channel.alternates.push_back(std::move(entries[i].channel.stream));
+        grouped.push_back(std::move(channel));
+    }
+    return grouped;
+}
+
+std::vector<Channel> tidyCategories(std::vector<Channel> channels) {
+    // First pass: the best spelling of every category; second pass: rename and drop repeats
+    std::unordered_map<std::string, std::pair<std::string, int>> shown;  // key -> best spelling, its score
+    std::unordered_map<std::string, std::string> keyOf;
+    for (const auto& channel : channels) {
+        for (const auto& group : channel.groups) {
+            if (keyOf.count(group)) continue;
+            std::string stripped = stripCategory(group);
+            if (stripped.empty()) stripped = std::string(trim(group));
+            std::string name = readableCategory(stripped);
+            std::string key  = categoryKey(stripped);
+            int score        = readability(name, name != stripped);
+            keyOf[group]     = key;
+            auto it          = shown.find(key);
+            if (it == shown.end()) shown[key] = {name, score};
+            else if (score > it->second.second) it->second = {name, score};
+        }
+    }
+    for (auto& channel : channels) {
+        std::vector<std::string> groups;
+        for (const auto& group : channel.groups) {
+            const std::string& name = shown[keyOf[group]].first;
+            if (std::find(groups.begin(), groups.end(), name) == groups.end()) groups.push_back(name);
+        }
+        channel.groups = std::move(groups);
+    }
+    return channels;
 }
 
 std::vector<Channel> filterByCountry(std::vector<Channel> channels, const std::vector<std::string>& countries) {

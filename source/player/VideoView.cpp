@@ -4,6 +4,9 @@
 #include <cmath>
 #include <fmt/format.h>
 
+#include <map>
+
+#include "api/HttpClient.hpp"
 #include "player/MpvCore.hpp"
 
 using namespace brls::literals;
@@ -12,6 +15,15 @@ namespace {
 
 const brls::Time OSD_DURATION  = 3 * 1000 * 1000;   // usec
 const brls::Time SAVE_INTERVAL = 30 * 1000 * 1000;  // usec
+
+// This session: first source URL of a channel -> the source that last played, tried first next time
+std::map<std::string, size_t> workingSource;
+
+size_t rememberedSource(const std::vector<StreamSource>& sources) {
+    if (sources.size() < 2) return 0;
+    auto it = workingSource.find(sources.front().url);
+    return it != workingSource.end() && it->second < sources.size() ? it->second : 0;
+}
 
 std::string formatTime(double seconds) {
     if (std::isnan(seconds) || seconds < 0) seconds = 0;
@@ -22,8 +34,11 @@ std::string formatTime(double seconds) {
 
 }  // namespace
 
-VideoView::VideoView(StreamSource src, std::function<void()> onSave)
-    : source(std::move(src)), onPeriodicSave(std::move(onSave)) {
+VideoView::VideoView(std::vector<StreamSource> list, std::function<void()> onSave)
+    : sources(list.empty() ? std::vector<StreamSource>{StreamSource{}} : std::move(list)),
+      rotation(sources.size(), rememberedSource(sources), brls::getCPUTimeUsec()),
+      source(sources[rotation.current()]),
+      onPeriodicSave(std::move(onSave)) {
     this->setFocusable(true);
     this->setHideHighlight(true);
     this->setGrow(1);
@@ -59,12 +74,33 @@ VideoView::VideoView(StreamSource src, std::function<void()> onSave)
             this->registerAction("-10s", button, seek(-10), true, true);
         for (auto button : {brls::BUTTON_RIGHT, brls::BUTTON_RB})
             this->registerAction("+10s", button, seek(10), true, true);
+    } else if (sources.size() > 1) {
+        // Live TV has nothing to seek: the same buttons switch between the channel's sources
+        auto step = [this](int delta) {
+            return [this, delta](brls::View*) {
+                rotation.step(delta, brls::getCPUTimeUsec());
+                loadCurrentSource();
+                return true;
+            };
+        };
+        for (auto button : {brls::BUTTON_LEFT, brls::BUTTON_LB})
+            this->registerAction("player/source_prev"_i18n, button, step(-1), true);
+        for (auto button : {brls::BUTTON_RIGHT, brls::BUTTON_RB})
+            this->registerAction("player/source_next"_i18n, button, step(1), true);
     }
 
     showOsd();
 }
 
 void VideoView::showOsd() { osdUntil = brls::getCPUTimeUsec() + OSD_DURATION; }
+
+void VideoView::loadCurrentSource() {
+    source = sources[rotation.current()];
+    brls::Logger::info("player: source {}/{} {} {}", rotation.current() + 1, sources.size(), source.quality,
+                       HttpClient::redact(source.url));
+    MpvCore::instance().loadStream(source);
+    showOsd();
+}
 
 void VideoView::openTrackMenu(const std::string& type) {
     auto& mpv     = MpvCore::instance();
@@ -106,6 +142,10 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
     drawOsd(vg, x, y, width, height);
 
     brls::Time now = brls::getCPUTimeUsec();
+    if (sources.size() > 1) {
+        if (rotation.update(now, !mpv.error.empty(), mpv.started(), mpv.buffering)) loadCurrentSource();
+        else if (rotation.playing()) workingSource[sources.front().url] = rotation.current();
+    }
     if (onPeriodicSave && !mpv.paused && !mpv.idle && now - lastSave > SAVE_INTERVAL) {
         lastSave = now;
         onPeriodicSave();
@@ -119,7 +159,8 @@ void VideoView::drawOsd(NVGcontext* vg, float x, float y, float width, float hei
 
     // Status in the middle of the screen
     std::string status;
-    if (!mpv.error.empty()) status = "player/error"_i18n + ": " + mpv.error;
+    if (rotation.exhausted()) status = "player/no_source"_i18n;
+    else if (!mpv.error.empty()) status = "player/error"_i18n + ": " + mpv.error;
     else if (mpv.loading || mpv.buffering) status = "player/loading"_i18n;
     if (!status.empty()) {
         nvgFontSize(vg, 28);
@@ -159,6 +200,14 @@ void VideoView::drawOsd(NVGcontext* vg, float x, float y, float width, float hei
         nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
         nvgFillColor(vg, nvgRGB(230, 60, 60));
         nvgText(vg, x + 40, barY, "player/live"_i18n.c_str(), nullptr);
+        if (sources.size() > 1) {
+            // "Fonte 2/7 · FHD" after the live badge
+            std::string label = fmt::format(fmt::runtime("player/source"_i18n), rotation.current() + 1, sources.size());
+            if (!source.quality.empty()) label += " · " + source.quality;
+            float liveWidth = nvgTextBounds(vg, 0, 0, "player/live"_i18n.c_str(), nullptr, nullptr);
+            nvgFillColor(vg, nvgRGBA(255, 255, 255, 200));
+            nvgText(vg, x + 40 + liveWidth + 24, barY, label.c_str(), nullptr);
+        }
     } else {
         float barX = x + 40, barW = width - 80;
         float progress = mpv.duration > 0 ? (float)std::clamp(mpv.position / mpv.duration, 0.0, 1.0) : 0;

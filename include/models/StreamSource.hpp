@@ -19,4 +19,5 @@ struct StreamSource {
     std::map<std::string, std::string> headers;  // Headers extras para o libmpv
     std::vector<SubtitleTrack> subtitles;        // Legendas externas anexadas
     bool isLive = false;                         // Define se esconde a barra de progresso
+    std::string quality;                         // Canais agrupados: "FHD", "HD", "4K", "SD" ou vazio
 };

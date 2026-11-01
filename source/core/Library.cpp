@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <ctime>
 
+#include "api/M3uParser.hpp"
 #include "core/Storage.hpp"
 
 using nlohmann::json;
@@ -14,7 +15,12 @@ const double MIN_RESUME       = 30;   // seconds: shorter progress is not worth 
 const double FINISHED_RATIO   = 0.95;
 const double FINISHED_REMAINS = 60;   // seconds left (long videos: end credits)
 
-std::string channelKey(const Channel& channel) { return channel.stream.url; }
+// The grouped channel, not one of its sources: favorites survive the best source changing, and the ones saved
+// before grouping ("ESPN 4 FHD", one URL) still match. A name made only of tags falls back to the URL.
+std::string channelKey(const Channel& channel) {
+    std::string key = M3uParser::channelGroupKey(channel.name);
+    return key.empty() ? channel.stream.url : key;
+}
 
 }  // namespace
 

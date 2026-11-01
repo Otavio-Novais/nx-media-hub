@@ -203,7 +203,104 @@ static void testSkipsVod() {
     CHECK(channels.size() == 2 && channels[0].name == "Globo" && channels[1].name == "SBT");
 }
 
+static void testGroupSources() {
+    // Same channel from several panels and qualities: one key, symbols and quality tags ignored
+    CHECK(M3uParser::channelGroupKey("ESPN 4 FHD H.265") == "ESPN 4");
+    CHECK(M3uParser::channelGroupKey("ESPN 4 [ALT]") == "ESPN 4");
+    CHECK(M3uParser::channelGroupKey("Globo SP 4K") == M3uParser::channelGroupKey("GLOBO SP FHD"));
+    CHECK(M3uParser::channelGroupKey("DISCOVERY CHANNEL FHD*") == M3uParser::channelGroupKey("Discovery Channel"));
+    CHECK(M3uParser::channelGroupKey("SporTV Full HD") == "SPORTV");
+    CHECK(M3uParser::channelGroupKey("Globo ᴴᴰ ⚽") == "GLOBO");
+    CHECK(M3uParser::channelGroupKey("Câmara") == "CÂMARA");
+    CHECK(M3uParser::channelGroupKey("ESPN 2 HD") != M3uParser::channelGroupKey("ESPN 4 HD"));
+
+    auto channel = [](const std::string& name, const std::string& url, std::vector<std::string> groups = {},
+                      const std::string& logo = "", const std::string& tvgId = "") {
+        Channel c;
+        c.name         = name;
+        c.logo         = logo;
+        c.tvgId        = tvgId;
+        c.groups       = std::move(groups);
+        c.stream.url   = url;
+        c.stream.title = name;
+        return c;
+    };
+    auto grouped = M3uParser::groupSources({
+        channel("ESPN 4 SD", "http://a/sd", {"CANAIS = ESPN"}),
+        channel("SBT", "http://b/sbt"),
+        channel("ESPN 4 4K", "http://a/4k", {}, "http://logo/espn.png"),
+        channel("ESPN 4", "http://c/plain", {"CANAIS: ESPN"}),
+        channel("ESPN 4 HD", "http://a/hd", {"CANAIS = ESPN"}),
+        channel("ESPN 4 FHD H.265", "http://c/fhd", {}, "", "espn.4.br"),
+    });
+    CHECK(grouped.size() == 2);
+    const auto& espn = grouped[0];  // order of first appearance
+    CHECK(espn.name == "ESPN 4");
+    CHECK(espn.tvgId == "espn.4.br");  // from the best source
+    CHECK(espn.logo == "http://logo/espn.png");
+    CHECK(espn.groups.size() == 2 && espn.groups[0] == "CANAIS = ESPN" && espn.groups[1] == "CANAIS: ESPN");
+    // FHD, HD, no tag, 4K, SD
+    CHECK(espn.stream.url == "http://c/fhd" && espn.stream.quality == "FHD");
+    CHECK(espn.alternates.size() == 4);
+    CHECK(espn.alternates[0].url == "http://a/hd" && espn.alternates[0].quality == "HD");
+    CHECK(espn.alternates[1].url == "http://c/plain" && espn.alternates[1].quality.empty());
+    CHECK(espn.alternates[2].url == "http://a/4k" && espn.alternates[2].quality == "4K");
+    CHECK(espn.alternates[3].url == "http://a/sd" && espn.alternates[3].quality == "SD");
+    CHECK(espn.stream.title == "ESPN 4" && espn.alternates[3].title == "ESPN 4");
+    CHECK(espn.sources().size() == 5 && espn.sources()[0].url == "http://c/fhd");
+    CHECK(grouped[1].name == "SBT" && grouped[1].alternates.empty());
+
+    // Same quality from several servers: alternate between them, so a server that is down costs one try
+    auto spread = M3uParser::groupSources({
+        channel("HBO FHD", "http://a.com/1"),
+        channel("HBO FHD", "http://a.com/2"),
+        channel("HBO FHD", "http://b.com:80/1"),
+        channel("HBO HD", "http://a.com/3"),
+        channel("HBO FHD", "http://b.com:80/2"),
+    });
+    CHECK(spread.size() == 1 && spread[0].alternates.size() == 4);
+    auto order = spread[0].sources();
+    CHECK(order[0].url == "http://a.com/1" && order[1].url == "http://b.com:80/1" && order[2].url == "http://a.com/2" &&
+          order[3].url == "http://b.com:80/2" && order[4].url == "http://a.com/3");
+
+    // A name made only of tags keeps its own entry instead of merging with every other such name
+    auto tagsOnly = M3uParser::groupSources({channel("HD", "http://x/1"), channel("FHD", "http://x/2")});
+    CHECK(tagsOnly.size() == 2);
+}
+
+static void testTidyCategories() {
+    auto channel = [](const std::string& name, std::vector<std::string> groups) {
+        Channel c;
+        c.name       = name;
+        c.groups     = std::move(groups);
+        c.stream.url = "http://x/" + name;
+        return c;
+    };
+    auto tidy = M3uParser::tidyCategories({
+        channel("A", {"CANAIS = ESPN", "CANAIS: ESPN ⚽"}),  // the same category twice: once
+        channel("B", {"Canais | ESPN"}),
+        channel("C", {"CANAIS = BAND", "CANAIS: DOCUMENTÁRIOS ✨"}),
+        channel("D", {"Canais | Band", "Canais | Documentarios"}),
+        channel("E", {"Z - CANAIS: ADULTOS ⛔", "CANAIS ❌ ADULTOS"}),
+        channel("F", {"CANAIS: GLOBO CAPITAIS  - ✨", "Canais |  Abertos", "CANAIS: NBA / PPV ⛹️"}),
+        channel("G", {"24HRS =  NOVELAS", "AREA DO CLIENTE", "News", "CANAIS: MÚSICA ✨"}),
+        channel("H", {"CANAIS = SPORTV", "Canais | SporTV"}),  // a panel's own spelling beats a capitalized one
+    });
+    using G = std::vector<std::string>;
+    CHECK(tidy[0].groups == G{"ESPN"});
+    CHECK(tidy[1].groups == G{"ESPN"});
+    CHECK(tidy[2].groups == (G{"Band", "Documentários"}));  // the most readable spelling wins
+    CHECK(tidy[3].groups == (G{"Band", "Documentários"}));
+    CHECK(tidy[4].groups == G{"Adultos"});
+    CHECK(tidy[5].groups == (G{"Globo Capitais", "Abertos", "NBA / PPV"}));
+    // Words of up to 4 letters keep their caps (ESPN, HBO), "AREA" included
+    CHECK(tidy[6].groups == (G{"24HRS = Novelas", "AREA do Cliente", "News", "Música"}));
+    CHECK(tidy[7].groups == G{"SporTV"});
+}
+
 int main() {
+    testTidyCategories();
+    testGroupSources();
     testSkipsVod();
     testIncremental();
     testFilterByCountry();

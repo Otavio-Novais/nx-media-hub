@@ -50,6 +50,10 @@ public:
     std::string hwdec;
     std::string error;
 
+    // The stream passed to the last loadStream() is showing video. Unlike !loading, it is not fooled by the
+    // previous stream ending (its END_FILE arrives after the new loadStream())
+    bool started() const { return fileLoaded && !loading; }
+
 private:
     MpvCore();
     void initVideo();

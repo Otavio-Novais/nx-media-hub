@@ -10,5 +10,9 @@
   "hints": " Pausar    ±10s    Áudio    Legendas    Voltar",
   "hints_paused": " Continuar    ±10s    Áudio    Legendas    Voltar",
   "hints_live": " Áudio    Legendas    Voltar",
-  "resuming": "Retomando de {}"
+  "resuming": "Retomando de {}",
+  "source": "Fonte {}/{}",
+  "source_prev": "Fonte anterior",
+  "source_next": "Próxima fonte",
+  "no_source": "Nenhuma fonte deste canal funcionou (LB/RB para tentar outra)"
 }

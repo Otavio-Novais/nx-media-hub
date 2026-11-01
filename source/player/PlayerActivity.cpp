@@ -15,7 +15,14 @@ const double MIN_RECORD = 30;  // seconds watched before a title shows up in "co
 }  // namespace
 
 PlayerActivity::PlayerActivity(const StreamSource& source, PlaybackContext context)
-    : brls::Activity(new VideoView(source, [this] { recordProgress(); })), source(source), context(std::move(context)) {
+    : PlayerActivity(std::vector<StreamSource>{source}, std::move(context)) {}
+
+PlayerActivity::PlayerActivity(std::vector<StreamSource> sources, PlaybackContext context)
+    : PlayerActivity(new VideoView(std::move(sources), [this] { recordProgress(); }), std::move(context)) {}
+
+// VideoView picks the first source to try (the one that last worked this session)
+PlayerActivity::PlayerActivity(VideoView* view, PlaybackContext context)
+    : brls::Activity(view), source(view->currentSource()), context(std::move(context)) {
     double start = 0;
     if (this->context.item && !source.isLive)
         start = History::instance().resumePosition(*this->context.item, this->context.season, this->context.episode);
